@@ -7,7 +7,7 @@ import { Conversation, type VoiceConversation } from '@elevenlabs/client';
 import { teacherAuth } from './api';
 
 export type TeacherStatus = 'idle' | 'connecting' | 'connected' | 'error';
-export type TeacherMode = 'listening' | 'speaking';
+export type TeacherMode = 'listening' | 'speaking' | 'thinking';
 
 export interface TeacherCallbacks {
   onStatus: (s: TeacherStatus, detail?: string) => void;

@@ -1,4 +1,8 @@
-/** Roteador por hash (funciona em hospedagem estática e dentro do servidor). */
+/**
+ * Roteador por hash. Formato compatível com artefatos (só `#nome` com letras,
+ * dígitos e hífens): `#curso`, `#aula--fala-01`, `#professora--drill--fala-01`.
+ * O separador de argumentos é `--` (ids usam hífen simples).
+ */
 export type Route =
   | { name: 'home' }
   | { name: 'course' }
@@ -13,10 +17,11 @@ export type Route =
   | { name: 'settings' }
   | { name: 'base' };
 
+const MODES = ['conversation', 'drill', 'roleplay', 'interview'];
+
 export function parse(hash: string): Route {
-  const [path, query] = hash.replace(/^#\/?/, '').split('?');
-  const q = new URLSearchParams(query ?? '');
-  const [a, b] = path.split('/');
+  const [a, ...args] = hash.replace(/^#\/?/, '').replace(/\//g, '--').split('--');
+  const b = args[0];
   switch (a) {
     case 'curso': return { name: 'course' };
     case 'aula': return b ? { name: 'lesson', id: b } : { name: 'course' };
@@ -24,7 +29,11 @@ export function parse(hash: string): Route {
     case 'video': return b ? { name: 'video', id: b } : { name: 'course' };
     case 'historias': return { name: 'stories' };
     case 'historia': return b ? { name: 'story', id: b } : { name: 'stories' };
-    case 'professora': return { name: 'teacher', lessonId: q.get('aula') ?? undefined, mode: q.get('modo') ?? undefined };
+    case 'professora': {
+      const mode = args.find((x) => MODES.includes(x));
+      const lessonId = args.find((x) => !MODES.includes(x));
+      return { name: 'teacher', mode, lessonId };
+    }
     case 'sotaque': return { name: 'accent' };
     case 'perfil': return { name: 'profile' };
     case 'ajustes': return { name: 'settings' };
@@ -35,22 +44,17 @@ export function parse(hash: string): Route {
 
 export function toHash(r: Route): string {
   switch (r.name) {
-    case 'home': return '#/';
-    case 'course': return '#/curso';
-    case 'lesson': return `#/aula/${r.id}`;
-    case 'practice': return r.lessonId ? `#/pratica/${r.lessonId}` : '#/pratica';
-    case 'video': return `#/video/${r.id}`;
-    case 'stories': return '#/historias';
-    case 'story': return `#/historia/${r.id}`;
-    case 'teacher': {
-      const q = new URLSearchParams();
-      if (r.lessonId) q.set('aula', r.lessonId);
-      if (r.mode) q.set('modo', r.mode);
-      return `#/professora${q.size ? '?' + q : ''}`;
-    }
-    case 'accent': return '#/sotaque';
-    case 'profile': return '#/perfil';
-    case 'settings': return '#/ajustes';
-    case 'base': return '#/base';
+    case 'home': return '#inicio';
+    case 'course': return '#curso';
+    case 'lesson': return `#aula--${r.id}`;
+    case 'practice': return r.lessonId ? `#pratica--${r.lessonId}` : '#pratica';
+    case 'video': return `#video--${r.id}`;
+    case 'stories': return '#historias';
+    case 'story': return `#historia--${r.id}`;
+    case 'teacher': return ['#professora', r.mode, r.lessonId].filter(Boolean).join('--');
+    case 'accent': return '#sotaque';
+    case 'profile': return '#perfil';
+    case 'settings': return '#ajustes';
+    case 'base': return '#base';
   }
 }

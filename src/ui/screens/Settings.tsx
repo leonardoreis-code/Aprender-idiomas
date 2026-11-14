@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import type { AppState, Settings as S } from '../../infra/storage';
 import { ACHIEVEMENTS } from '../../domain/motivation/motivation';
 import { BackIcon } from '../icons/ui';
@@ -17,6 +18,20 @@ function Switch({ label, desc, on, onToggle }: { label: string; desc?: string; o
       <div><strong id={id}>{label}</strong>{desc && <p>{desc}</p>}</div>
       <button className="switch" role="switch" aria-checked={on} aria-labelledby={id} onClick={onToggle} />
     </div>
+  );
+}
+
+/** Confirmação em dois cliques (confirm() não funciona em artefatos). */
+function ResetButton({ onReset }: { onReset: () => void }) {
+  const [armed, setArmed] = useState(false);
+  return armed ? (
+    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+      <span>Apagar todo o progresso deste dispositivo?</span>
+      <button className="btn btn-bad" onClick={onReset}>Sim, apagar</button>
+      <button className="btn btn-ghost" onClick={() => setArmed(false)}>Cancelar</button>
+    </div>
+  ) : (
+    <button className="btn btn-ghost" onClick={() => setArmed(true)}>Apagar progresso</button>
   );
 }
 
@@ -75,9 +90,7 @@ export function Settings({ state, onChange, onGoal, onReset, onBack }: Props) {
       </ul>
 
       <div style={{ marginTop: 28 }}>
-        <button className="btn btn-ghost" onClick={() => { if (confirm('Apagar todo o progresso deste dispositivo?')) onReset(); }}>
-          Apagar progresso
-        </button>
+        <ResetButton onReset={onReset} />
       </div>
       <p style={{ color: 'var(--ink-3)', fontSize: '.85rem', marginTop: 24 }}>
         Atalhos: <kbd>1–4</kbd> escolher · <kbd>Enter</kbd> verificar/continuar · <kbd>Espaço</kbd> ouvir · <kbd>Esc</kbd> sair.

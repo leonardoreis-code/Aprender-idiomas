@@ -7,10 +7,14 @@ export interface Health {
   agentId?: string;
 }
 
+import { isArtifact } from './platform';
+
 const FALLBACK_AGENT = 'agent_2001m7cr5kzdf2srmtvn4p87nxzr';
 let healthP: Promise<Health> | null = null;
 
 export function health(): Promise<Health> {
+  // num artefato não existe backend (e conexões externas são bloqueadas)
+  if (isArtifact) return Promise.resolve({ tts: false, stt: false, teacher: false });
   healthP ??= fetch('/api/health')
     .then((r) => (r.ok ? r.json() : Promise.reject()))
     .catch(() => ({ tts: false, stt: false, teacher: true, agentId: FALLBACK_AGENT }));

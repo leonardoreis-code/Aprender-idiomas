@@ -20,7 +20,10 @@ function ctor(): Ctor | null {
   return w.SpeechRecognition ?? w.webkitSpeechRecognition ?? null;
 }
 
-export const speechRecognitionSupported = () => typeof window !== 'undefined' && !!ctor();
+import { caps, isArtifact } from './platform';
+
+/** Num artefato o microfone só existe via capacidade `dictation`. */
+export const speechRecognitionSupported = () => (isArtifact ? !!caps.dictation : typeof window !== 'undefined' && !!ctor());
 
 export interface Listening {
   result: Promise<string[]>;
@@ -29,6 +32,7 @@ export interface Listening {
 
 /** Escuta uma frase e devolve as alternativas de transcrição. */
 export function listen(lang = 'en-US', timeoutMs = 8000): Listening {
+  if (isArtifact) return listenDictation(lang, timeoutMs);
   const C = ctor();
   if (!C) return { result: Promise.reject(new Error('unsupported')), stop: () => {} };
   const rec = new C();
@@ -56,4 +60,44 @@ export function listen(lang = 'en-US', timeoutMs = 8000): Listening {
     timer = setTimeout(() => rec.stop(), timeoutMs);
   });
   return { result, stop: () => rec.stop() };
+}
+
+/**
+ * Ditado do runtime do artefato. IMPORTANTE: `start()` precisa ser chamado na
+ * mesma pilha síncrona do clique — por isso nada é aguardado antes dele.
+ */
+function listenDictation(lang: string, timeoutMs: number): Listening {
+  const d = caps.dictation;
+  if (!d) return { result: Promise.reject(new Error('unsupported')), stop: () => {} };
+  let text = '';
+  let partial = '';
+  let resolveFn!: (v: string[]) => void;
+  let rejectFn!: (e: Error) => void;
+  const result = new Promise<string[]>((res, rej) => {
+    resolveFn = res;
+    rejectFn = rej;
+  });
+  const offs: (() => void)[] = [];
+  const finish = () => {
+    clearTimeout(timer);
+    offs.forEach((o) => o());
+    const t = (text || partial).trim();
+    resolveFn(t ? [t] : []);
+  };
+  offs.push(d.onFinal(({ text: t }) => (text = `${text} ${t}`.trim())));
+  offs.push(d.onPartial(({ text: t }) => (partial = t)));
+  let started = false;
+  offs.push(
+    d.onState(({ state }) => {
+      if (state === 'listening' || state === 'starting') started = true;
+      if (state === 'idle' && started) finish();
+    }),
+  );
+  d.start({ language: lang.slice(0, 2) }).catch((e: { code?: string }) => {
+    clearTimeout(timer);
+    offs.forEach((o) => o());
+    rejectFn(new Error(e?.code ?? 'dictation'));
+  });
+  const timer = setTimeout(() => void d.stop().catch(() => {}), timeoutMs);
+  return { result, stop: () => void d.stop().catch(() => {}) };
 }

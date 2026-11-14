@@ -6,6 +6,7 @@
  * `onLevel` recebe o volume (0–1) a cada quadro — usado na boca do avatar.
  */
 import { health, ttsUrl } from './api';
+import { caps, isArtifact } from './platform';
 
 type Manifest = Record<string, string[]>;
 let manifest: Manifest | null = null;
@@ -40,6 +41,11 @@ export function stopAudio() {
   stopLevel?.();
   stopLevel = null;
   if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+  try {
+    caps.tts?.stop();
+  } catch {
+    /* ignore */
+  }
 }
 
 function attachLevel(el: HTMLAudioElement, onLevel: (l: number) => void) {
@@ -102,6 +108,13 @@ export async function speak(text: string, opts: PlayOptions = {}): Promise<void>
       }
     }
   }
+  if (isArtifact && caps.tts) {
+    try {
+      return await artifactTts(text, opts);
+    } catch {
+      /* sem gesto do usuário ou limite: cai para a voz do sistema */
+    }
+  }
   const h = await health();
   if (h.tts) {
     try {
@@ -146,4 +159,31 @@ function synth(text: string, opts: PlayOptions): Promise<void> {
     u.onerror = end;
     window.speechSynthesis.speak(u);
   });
+}
+
+const TTS_VOICES = ['buttery', 'glassy', 'rounded'];
+
+/** Voz do Claude (runtime do artefato). Sem acesso ao áudio: a boca do avatar pulsa enquanto fala. */
+async function artifactTts(text: string, opts: PlayOptions): Promise<void> {
+  const t = caps.tts!;
+  try {
+    t.stop();
+  } catch {
+    /* ignore */
+  }
+  let pulse: ReturnType<typeof setInterval> | null = null;
+  if (opts.onLevel) {
+    let k = 0;
+    pulse = setInterval(() => opts.onLevel!(0.25 + 0.6 * Math.abs(Math.sin((k += 0.9)))), 90);
+  }
+  try {
+    await t.speak(text, {
+      voice: opts.lang === 'pt' ? 'airy' : TTS_VOICES[(opts.variant ?? 0) % TTS_VOICES.length],
+      rate: opts.slow ? 0.75 : 1,
+      language: opts.lang === 'pt' ? 'pt-BR' : 'en',
+    });
+  } finally {
+    if (pulse) clearInterval(pulse);
+    opts.onLevel?.(0);
+  }
 }

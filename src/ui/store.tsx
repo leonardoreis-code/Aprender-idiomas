@@ -26,6 +26,7 @@ export interface Toast {
 }
 
 const Ctx = createContext<Store | null>(null);
+let themeApplied = false;
 
 export function StoreProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<AppState>(() => {
@@ -44,8 +45,14 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     const root = document.documentElement;
     const s = state.settings;
     root.style.setProperty('--scale', String(s.fontScale));
-    if (s.theme === 'auto') root.removeAttribute('data-theme');
-    else root.setAttribute('data-theme', s.theme);
+    // 'auto' não mexe no atributo: num artefato quem define o tema é o claude.ai
+    if (s.theme !== 'auto') {
+      root.setAttribute('data-theme', s.theme);
+      themeApplied = true;
+    } else if (themeApplied) {
+      root.removeAttribute('data-theme');
+      themeApplied = false;
+    }
     if (s.highContrast) root.setAttribute('data-contrast', 'high');
     else root.removeAttribute('data-contrast');
     setSfxEnabled(s.sound);

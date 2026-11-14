@@ -22,11 +22,14 @@ export interface ActiveRecording {
   level: () => number;
 }
 
-export const canRecord = () => typeof navigator !== 'undefined' && !!navigator.mediaDevices?.getUserMedia;
+import { isArtifact } from './platform';
+
+export const canRecord = () => !isArtifact && typeof navigator !== 'undefined' && !!navigator.mediaDevices?.getUserMedia;
 
 export async function startRecording(opts: { maxMs?: number; useScribe?: boolean } = {}): Promise<ActiveRecording> {
   const maxMs = opts.maxMs ?? 12000;
   const started = Date.now();
+  if (isArtifact) return dictationRecording(maxMs, started);
   let stream: MediaStream | null = null;
   let recorder: MediaRecorder | null = null;
   const chunks: Blob[] = [];
@@ -87,4 +90,17 @@ export async function startRecording(opts: { maxMs?: number; useScribe?: boolean
   })();
 
   return { stop: () => resolveStop(), done, level };
+}
+
+/** Artefato: sem gravação de áudio; só o texto do ditado (iniciado de forma síncrona no clique). */
+function dictationRecording(maxMs: number, started: number): ActiveRecording {
+  const l = listen('en-US', maxMs);
+  let t = 0;
+  return {
+    stop: l.stop,
+    level: () => 0.25 + 0.25 * Math.abs(Math.sin((t += 0.18))),
+    done: l.result
+      .catch(() => [] as string[])
+      .then((alts) => ({ blob: null, url: null, text: alts[0] ?? '', alternatives: alts, source: alts.length ? 'browser' : 'none', durationMs: Date.now() - started }) as Recording),
+  };
 }
