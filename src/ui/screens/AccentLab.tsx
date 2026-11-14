@@ -38,6 +38,7 @@ export function AccentLab({ onBack }: { onBack: () => void }) {
     setReport(rep);
     store.recordAccent(rep.rules.map((x) => x.id));
     store.track('accentChecks');
+    if (r.text) store.logDay({ spokenSec: r.durationMs / 1000, spoken: 1 });
     store.track('spoken');
     if (rep.score >= 90) store.gainXp(10);
     store.set((s) => ({ ...s, bestSpeech: Math.max(s.bestSpeech, rep.score) }));

@@ -90,6 +90,7 @@ export function TeacherRoom({ onBack, initialMode = 'conversation', lessonContex
     const secs = Math.round((Date.now() - startedAt.current) / 1000);
     if (secs > 5) {
       store.set((st) => ({ ...st, teacherSeconds: st.teacherSeconds + secs }));
+      store.logDay({ mayaSec: secs });
       store.track('teacherMin', Math.floor(secs / 60));
       store.gainXp(Math.min(60, Math.round(secs / 6)));
     }

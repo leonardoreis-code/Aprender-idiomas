@@ -72,7 +72,8 @@ export function Profile({ go }: { go: (r: Route) => void }) {
               <small className="muted">{ERROR_CATEGORIES[e.id]?.explain}</small>
             </div>
           ))}
-          {errs.length > 0 && <button className="btn btn-ghost btn-block" style={{ marginTop: 10 }} onClick={() => go({ name: 'teacher', mode: 'drill' })}>Treinar meus erros com a Maya</button>}
+          {errs.length > 0 && <button className="btn btn-ghost btn-block" style={{ marginTop: 10 }} onClick={() => go({ name: 'practice', lessonId: 'erros' })}>Treinar meus erros agora</button>}
+          {errs.length > 0 && <button className="btn btn-ghost btn-block" style={{ marginTop: 8 }} onClick={() => go({ name: 'teacher', mode: 'drill' })}>Treinar com a Maya</button>}
         </section>
         <section className="card">
           <h2 className="card-h">Sotaque</h2>

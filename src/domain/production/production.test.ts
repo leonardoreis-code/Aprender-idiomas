@@ -35,6 +35,10 @@ describe('Detector de erros PT-BR', () => {
   it('there is', () => expect(detectErrors('have a bug in production', ['There is a bug in production.'])).toContain('there-is'));
   it('do-support', () => expect(detectErrors('you like coffee?', ['Do you like coffee?'])).toContain('do-support'));
   it('3ª pessoa', () => expect(detectErrors('she work at a bank', ['She works at a bank.'])).toContain('third-person'));
+  it('3ª pessoa com substantivo', () => {
+    expect(detectErrors('my boss live in london', ['My boss lives in London.'])).toContain('third-person');
+    expect(detectErrors('there are two error in the report', ['There are two errors in the report.'])).not.toContain('third-person');
+  });
   it('passado', () => expect(detectErrors('yesterday i go to the office', ['Yesterday I went to the office.'])).toContain('past-tense'));
   it('ordem do adjetivo', () => expect(detectErrors('a database big', ['a big database'])).toContain('word-order'));
   it('perfect', () => expect(detectErrors('i work here for two years', ['I have been working here for two years.'])).toContain('perfect'));

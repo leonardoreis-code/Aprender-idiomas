@@ -33,6 +33,8 @@ describe('F-03 correção tolerante', () => {
   it('1 typo em palavra longa = almost; em palavra curta = wrong', () => {
     expect(checkTyped('nice to meet you, plaese', ['Nice to meet you, please'])).toBe('almost');
     expect(checkTyped('I eta bread', ['I eat bread'])).toBe('wrong');
+    expect(checkTyped('she work at a bank', ['She works at a bank'])).toBe('wrong');
+    expect(checkTyped('I like the meeting', ['I liked the meeting'])).toBe('wrong');
   });
   it('vazio é errado', () => expect(checkTyped('   ', ['hi'])).toBe('wrong'));
 });

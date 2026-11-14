@@ -34,3 +34,23 @@ export function nextLesson(level: LearnerLevel, goals: string[], done: Record<st
   }
   return undefined;
 }
+
+/** Categoria de erro → aulas que tratam exatamente daquele ponto. */
+export const ERROR_LESSONS: Record<string, string[]> = {
+  'missing-subject': ['fala-01'],
+  'word-order': ['fala-01'],
+  'do-support': ['fala-02', 'zero-05'],
+  'third-person': ['fala-02', 'zero-04'],
+  'past-tense': ['fala-03'],
+  perfect: ['fala-05'],
+  'there-is': ['fala-06'],
+  preposition: ['fala-09'],
+  article: ['zero-02'],
+  vocabulary: ['fala-08', 'fala-11'],
+};
+
+/** Frases das aulas ligadas às categorias de erro mais frequentes do aluno. */
+export function drillsForErrors(topErrors: string[]) {
+  const ids = new Set(topErrors.flatMap((e) => ERROR_LESSONS[e] ?? []));
+  return allSpeakingLessons.filter((l) => ids.has(l.id)).flatMap((l) => l.drills);
+}

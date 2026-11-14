@@ -53,3 +53,14 @@ vídeo → história → sotaque → perfil, sem erros de console).
 - **Sotaque por inteligibilidade** (o que a máquina entendeu), não por fonema: honesto com o que Scribe/Web Speech
   oferecem. Avaliação fonema a fonema exige outro serviço (P1).
 - **Estado local** (localStorage) até existir conta/sincronização (P1).
+
+## 7. v3 — prova de aprendizado (resumo)
+Contextos novos: **Assessment** (`domain/assessment/*`: formas A/B/C, pontuação, índice, comparação),
+**Plan** (`domain/plan/sixMonths.ts`: 26 semanas, fases, agenda de checkpoints) e **Progress**
+(`domain/progress/daily.ts`: estatísticas diárias medidas). Critérios de aceite:
+- **A-01** Nenhuma frase do checkpoint existe no curso (teste automático).
+- **A-02** Formas com as mesmas 12 categorias na mesma ordem e diferença de tamanho ≤ 15%.
+- **A-03** Índice monotônico em precisão, velocidade e fluência; faixas fixas.
+- **A-04** Inflexão (-s, -ed) nunca é tolerada como erro de digitação.
+- **A-05** Aula só é concluída com ≥ 70% de acerto na primeira tentativa.
+Detalhes e limites em `docs/PLANO-6-MESES.md`.

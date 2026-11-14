@@ -13,7 +13,10 @@ export interface Recording {
   text: string;
   alternatives: string[];
   source: 'scribe' | 'browser' | 'none';
+  /** Só o tempo de fala (não inclui a transcrição). */
   durationMs: number;
+  /** Instante em que a gravação começou. */
+  startedAt: number;
 }
 
 export interface ActiveRecording {
@@ -65,6 +68,7 @@ export async function startRecording(opts: { maxMs?: number; useScribe?: boolean
 
   const done = (async (): Promise<Recording> => {
     await stopped;
+    const stoppedAt = Date.now();
     clearTimeout(timer);
     browser?.stop();
     let blob: Blob | null = null;
@@ -86,7 +90,7 @@ export async function startRecording(opts: { maxMs?: number; useScribe?: boolean
         source = 'scribe';
       }
     }
-    return { blob, url: blob ? URL.createObjectURL(blob) : null, text, alternatives: text ? [text, ...alternatives] : alternatives, source, durationMs: Date.now() - started };
+    return { blob, url: blob ? URL.createObjectURL(blob) : null, text, alternatives: text ? [text, ...alternatives] : alternatives, source, durationMs: stoppedAt - started, startedAt: started };
   })();
 
   return { stop: () => resolveStop(), done, level };
@@ -101,6 +105,6 @@ function dictationRecording(maxMs: number, started: number): ActiveRecording {
     level: () => 0.25 + 0.25 * Math.abs(Math.sin((t += 0.18))),
     done: l.result
       .catch(() => [] as string[])
-      .then((alts) => ({ blob: null, url: null, text: alts[0] ?? '', alternatives: alts, source: alts.length ? 'browser' : 'none', durationMs: Date.now() - started }) as Recording),
+      .then((alts) => ({ blob: null, url: null, text: alts[0] ?? '', alternatives: alts, source: alts.length ? 'browser' : 'none', durationMs: Date.now() - started, startedAt: started }) as Recording),
   };
 }

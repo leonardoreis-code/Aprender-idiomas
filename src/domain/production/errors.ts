@@ -55,6 +55,12 @@ export function detectErrors(input: string, targets: string[]): string[] {
   for (let i = 0; i < t.length - 1; i++) {
     if (['he', 'she', 'it'].includes(t[i]) && /[^s]s$/.test(t[i + 1]) && gs.has(t[i + 1].replace(/e?s$/, ''))) out.add('third-person');
   }
+  // 3ª pessoa com sujeito substantivo ("my boss live" → lives); depois de determinante é plural, não verbo
+  const DET = new Set(['a', 'an', 'the', 'two', 'three', 'four', 'five', 'many', 'some', 'my', 'your', 'our', 'their', 'his', 'her', 'these', 'those', 'of', 'no']);
+  for (let i = 1; i < t.length; i++) {
+    const w = t[i];
+    if (/[^s]s$/.test(w) && w.length > 3 && !gs.has(w) && gs.has(w.replace(/s$/, '')) && !DET.has(t[i - 1]) && !PREPS.has(t[i - 1])) out.add('third-person');
+  }
   // passado
   for (const w of t) {
     const base = IRREGULAR_PAST[w] ?? (w.endsWith('ed') && w.length > 4 ? w.replace(/e?d$/, '') : null);

@@ -42,6 +42,12 @@ export interface ProductionAttempt {
   hesitant: boolean;
   ms: number;
   errors: string[];
+  /** Palavras da frase-alvo (para segundos por palavra). */
+  words?: number;
+  /** Duração da fala gravada, se a resposta foi falada. */
+  spokenMs?: number;
+  /** A frase estava vencida (revisão) — base da retenção real. */
+  due?: boolean;
 }
 
 /** Tempo-limite do modo relâmpago: cresce com o tamanho da frase. */
@@ -134,4 +140,27 @@ export function interleave<T>(items: T[], group: (t: T) => string): T[] {
 
 export function dueDrillCount(state: ProductionState, now = new Date()): number {
   return Object.values(state).filter((p) => p.card && new Date(p.card.due).getTime() <= now.getTime()).length;
+}
+
+/**
+ * Treino dos meus erros: frases das aulas ligadas às categorias em que o aluno
+ * mais erra. Prioriza frases já erradas e os degraus mais baixos.
+ */
+export function buildErrorQueue(drills: Drill[], state: ProductionState, max = 12): QueueItem[] {
+  const scored = drills.map((d) => {
+    const p = state[d.id];
+    return { d, stage: (p?.stage ?? 0) as Stage, score: (p?.lastErrors.length ?? 0) * 10 - (p?.stage ?? 0) * 2 + (p ? 1 : 0) };
+  });
+  scored.sort((a, b) => b.score - a.score);
+  return interleave(
+    scored.slice(0, max).map((x) => ({ drill: x.d, stage: x.stage, reason: 'weak' as const })),
+    (q) => q.drill.id.replace(/-d\d+$/, ''),
+  );
+}
+
+/** Acerto na primeira tentativa de cada frase da sessão (0–1). */
+export function firstTryAccuracy(attempts: ProductionAttempt[]): number {
+  const first = new Map<string, boolean>();
+  for (const a of attempts) if (!first.has(a.drillId)) first.set(a.drillId, a.correct);
+  return first.size ? [...first.values()].filter(Boolean).length / first.size : 0;
 }

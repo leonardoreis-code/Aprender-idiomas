@@ -2,6 +2,9 @@ import type { CardMap } from '../domain/srs/scheduler';
 import { initialMotivation, type MotivationState } from '../domain/motivation/motivation';
 import type { ProductionState } from '../domain/production/ladder';
 import type { QuestDay } from '../domain/motivation/quests';
+import type { CheckpointResult } from '../domain/assessment/checkpoint';
+import type { Daily } from '../domain/progress/daily';
+import type { Drill } from '../domain/curriculum/speaking';
 
 export type LearnerLevel = 'zero' | 'fala' | 'avancado';
 export type Goal = 'trabalho' | 'entrevista' | 'viagem' | 'dia-a-dia';
@@ -59,6 +62,12 @@ export interface AppState {
   notebook: { en: string; pt: string; at: number }[];
   /** Itens comprados na loja. */
   purchases: string[];
+  /* ---- v3: prova de aprendizado ---- */
+  plan: { startDay: string | null };
+  checkpoints: CheckpointResult[];
+  daily: Daily;
+  /** Frases do próprio aluno ("Minhas frases"). */
+  custom: Drill[];
 }
 
 const KEY = 'fluente:v1';
@@ -84,6 +93,10 @@ export const defaultState = (): AppState => ({
   teacherSeconds: 0,
   notebook: [],
   purchases: [],
+  plan: { startDay: null },
+  checkpoints: [],
+  daily: {},
+  custom: [],
 });
 
 export function loadState(): AppState {
@@ -98,6 +111,7 @@ export function loadState(): AppState {
       motivation: { ...base.motivation, ...parsed.motivation },
       settings: { ...base.settings, ...parsed.settings },
       profile: { ...base.profile, ...parsed.profile },
+      plan: { ...base.plan, ...parsed.plan },
       version: 1,
     };
   } catch {

@@ -15,7 +15,11 @@ export type Route =
   | { name: 'accent' }
   | { name: 'profile' }
   | { name: 'settings' }
-  | { name: 'base' };
+  | { name: 'base' }
+  | { name: 'evolution' }
+  | { name: 'checkpoint' }
+  | { name: 'monologue' }
+  | { name: 'mine' };
 
 const MODES = ['conversation', 'drill', 'roleplay', 'interview'];
 
@@ -38,6 +42,10 @@ export function parse(hash: string): Route {
     case 'perfil': return { name: 'profile' };
     case 'ajustes': return { name: 'settings' };
     case 'base': return { name: 'base' };
+    case 'evolucao': return { name: 'evolution' };
+    case 'checkpoint': return { name: 'checkpoint' };
+    case 'fala-livre': return { name: 'monologue' };
+    case 'minhas-frases': return { name: 'mine' };
     default: return { name: 'home' };
   }
 }
@@ -56,5 +64,9 @@ export function toHash(r: Route): string {
     case 'profile': return '#perfil';
     case 'settings': return '#ajustes';
     case 'base': return '#base';
+    case 'evolution': return '#evolucao';
+    case 'checkpoint': return '#checkpoint';
+    case 'monologue': return '#fala-livre';
+    case 'mine': return '#minhas-frases';
   }
 }

@@ -29,6 +29,7 @@ interface Outcome {
   errors: string[];
   accent?: AccentReport;
   recordingUrl?: string | null;
+  spokenMs?: number;
   note?: string;
 }
 
@@ -58,7 +59,7 @@ export function ProductionSession({ title, queue: initial, pool, onExit, onDone 
   }, [idx]);
 
   const resolve = (o: Outcome) => {
-    const a: ProductionAttempt = { drillId: item.drill.id, stage: item.stage, correct: o.correct, hesitant: o.hesitant, ms: Date.now() - started.current, errors: o.errors };
+    const a: ProductionAttempt = { drillId: item.drill.id, stage: item.stage, correct: o.correct, hesitant: o.hesitant, ms: Date.now() - started.current, errors: o.errors, words: item.drill.en.split(/\s+/).length, spokenMs: o.spokenMs, due: item.reason === 'due' };
     setAttempts((x) => [...x, a]);
     store.track('produced');
     if (item.stage >= 3 && o.said) store.track('spoken');
@@ -292,6 +293,7 @@ function StageSpeak({ drill, flash, done, onResolve }: { drill: Drill; flash: bo
       errors: v === 'wrong' && said ? detectErrors(said, accepted(drill)) : [],
       accent,
       recordingUrl: r.url,
+      spokenMs: said ? r.durationMs : undefined,
       note: late ? 'Certo, mas passou do tempo. Na próxima, tente começar a falar antes de montar tudo na cabeça.' : r.source === 'scribe' ? 'Análise feita com ElevenLabs Scribe.' : undefined,
     });
   };

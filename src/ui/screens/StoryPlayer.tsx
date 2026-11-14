@@ -110,11 +110,14 @@ function SpeakTurn({ line, onDone }: { line: Extract<StoryLine, { type: 'speak' 
   const store = useStore();
   const [typing, setTyping] = useState(!micAvailable());
   const [val, setVal] = useState('');
-  const evaluate = (said: string, spoken: boolean) => {
+  const evaluate = (said: string, spoken: boolean, ms = 0) => {
     const v = checkTyped(said, [line.en, ...(line.alt ?? [])]);
     const errors = v === 'wrong' ? detectErrors(said, [line.en, ...(line.alt ?? [])]) : [];
     if (errors.length) store.set((s) => ({ ...s, errorLog: [errors, ...s.errorLog].slice(0, 300) }));
-    if (spoken) store.track('spoken');
+    if (spoken) {
+      store.track('spoken');
+      if (said) store.logDay({ spokenSec: ms / 1000, spoken: 1 });
+    }
     onDone({ ok: v !== 'wrong', text: said || '(sem resposta)', feedback: v === 'wrong' ? `Natural: "${line.en}". ${errors.map((e) => ERROR_CATEGORIES[e]?.explain).filter(Boolean).join(' ')}` : v === 'almost' ? `Quase: "${line.en}"` : 'Perfeito!' });
     void speak(line.en);
   };
@@ -128,7 +131,7 @@ function SpeakTurn({ line, onDone }: { line: Extract<StoryLine, { type: 'speak' 
           <button className="btn btn-primary">Enviar</button>
         </form>
       ) : (
-        <MicButton onResult={(r: Recording) => evaluate(r.text, true)} />
+        <MicButton onResult={(r: Recording) => evaluate(r.text, true, r.durationMs)} />
       )}
       <button className="link-btn" onClick={() => setTyping(!typing)}>{typing ? 'Prefiro falar' : 'Digitar em vez de falar'}</button>
     </div>

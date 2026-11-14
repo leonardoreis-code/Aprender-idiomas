@@ -3,6 +3,7 @@ import { addXp as addXpDomain, dayKey, reconcileStreak, unlockAchievements, type
 import { bump, claimable, type QuestMetric } from '../domain/motivation/quests';
 import { applyProduction, type ProductionAttempt } from '../domain/production/ladder';
 import { loadState, saveState, type AppState } from '../infra/storage';
+import { addDay, type DayStats } from '../domain/progress/daily';
 import { setSfxEnabled } from '../infra/sfx';
 
 /** Store da aplicação: um único estado persistido + casos de uso que o alteram. */
@@ -14,6 +15,8 @@ interface Store {
   track: (metric: QuestMetric, by?: number) => void;
   recordProduction: (attempts: ProductionAttempt[]) => void;
   recordAccent: (rules: string[]) => void;
+  /** Soma medidas do dia (segundos falando, Maya, fala livre…). */
+  logDay: (patch: Partial<DayStats>) => void;
   toast: (t: Toast) => void;
   toasts: Toast[];
 }
@@ -125,11 +128,35 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   );
 
   const recordProduction = useCallback((attempts: ProductionAttempt[]) => {
-    setState((s) => ({
-      ...s,
-      production: applyProduction(s.production, attempts),
-      errorLog: [...attempts.filter((a) => a.errors.length).map((a) => a.errors), ...s.errorLog].slice(0, 300),
-    }));
+    setState((s) => {
+      const production = applyProduction(s.production, attempts);
+      // primeira tentativa de cada frase: é ela que mede retenção
+      const first = new Map<string, ProductionAttempt>();
+      for (const a of attempts) if (!first.has(a.drillId)) first.set(a.drillId, a);
+      const firsts = [...first.values()];
+      const spokenOk = attempts.filter((a) => a.spokenMs && a.correct && a.words);
+      const patch: Partial<DayStats> = {
+        produced: attempts.length,
+        correct: attempts.filter((a) => a.correct).length,
+        spoken: attempts.filter((a) => a.spokenMs).length,
+        spokenSec: attempts.reduce((x, a) => x + (a.spokenMs ?? 0), 0) / 1000,
+        due: firsts.filter((a) => a.due).length,
+        dueOk: firsts.filter((a) => a.due && a.correct).length,
+        spwSum: spokenOk.reduce((x, a) => x + a.ms / 1000 / a.words!, 0),
+        spwN: spokenOk.length,
+        auto: Object.values(production).filter((p) => p.stage >= 3).length,
+      };
+      return {
+        ...s,
+        production,
+        errorLog: [...attempts.filter((a) => a.errors.length).map((a) => a.errors), ...s.errorLog].slice(0, 300),
+        daily: addDay(s.daily, dayKey(), patch),
+      };
+    });
+  }, []);
+
+  const logDay = useCallback((patch: Partial<DayStats>) => {
+    setState((s) => ({ ...s, daily: addDay(s.daily, dayKey(), patch) }));
   }, []);
 
   const recordAccent = useCallback((rules: string[]) => {
@@ -141,8 +168,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const value = useMemo(
-    () => ({ state, set, gainXp, track, recordProduction, recordAccent, toast, toasts }),
-    [state, set, gainXp, track, recordProduction, recordAccent, toast, toasts],
+    () => ({ state, set, gainXp, track, recordProduction, recordAccent, logDay, toast, toasts }),
+    [state, set, gainXp, track, recordProduction, recordAccent, logDay, toast, toasts],
   );
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

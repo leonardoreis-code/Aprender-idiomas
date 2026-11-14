@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { allItems, englishCourse, findItem, findLesson } from './content/en/course';
-import { allDrills, findSpeakingLesson, stories, videoForLesson, videoLessons } from './content';
+import { allDrills, drillsForErrors, findSpeakingLesson, stories, videoForLesson, videoLessons } from './content';
 import { buildLesson, buildReview } from './domain/practice/builder';
 import type { Exercise } from './domain/practice/types';
-import { buildProductionQueue } from './domain/production/ladder';
+import { buildErrorQueue, buildProductionQueue, firstTryAccuracy } from './domain/production/ladder';
+import { errorProfile } from './domain/production/errors';
 import { dueItemIds } from './domain/srs/scheduler';
 import { completeSession, type SessionOutcome } from './application/completeSession';
 import { loadManifest } from './infra/audio';
@@ -25,6 +26,9 @@ import { StoryPlayer } from './ui/screens/StoryPlayer';
 import { TeacherRoom, type TeacherModeId } from './ui/screens/TeacherRoom';
 import { AccentLab } from './ui/screens/AccentLab';
 import { Profile } from './ui/screens/Profile';
+import { CheckpointScreen } from './ui/screens/Checkpoint';
+import { Evolution } from './ui/screens/Evolution';
+import { Monologue, MySentences } from './ui/screens/Extras';
 import { Logo } from './ui/icons/ui';
 import { NavIcon } from './ui/components/NavIcon';
 
@@ -55,8 +59,8 @@ function useRoute(): [Route, (r: Route) => void] {
 const NAV: { route: Route; label: string; icon: Parameters<typeof NavIcon>[0]['name'] }[] = [
   { route: { name: 'home' }, label: 'Início', icon: 'home' },
   { route: { name: 'course' }, label: 'Curso', icon: 'course' },
-  { route: { name: 'practice' }, label: 'Praticar', icon: 'practice' },
   { route: { name: 'teacher' }, label: 'Maya', icon: 'teacher' },
+  { route: { name: 'evolution' }, label: 'Evolução', icon: 'practice' },
   { route: { name: 'profile' }, label: 'Perfil', icon: 'profile' },
 ];
 
@@ -78,11 +82,11 @@ function Shell() {
   }
 
   // telas imersivas (sem navegação)
-  const immersive = route.name === 'practice';
+  const immersive = route.name === 'practice' || route.name === 'checkpoint';
   const screen = <Screen route={route} go={go} />;
   if (immersive) return <>{screen}<Toasts /></>;
 
-  const active = (r: Route) => r.name === route.name || (r.name === 'course' && ['lesson', 'video', 'stories', 'story', 'base'].includes(route.name)) || (r.name === 'profile' && ['settings', 'accent'].includes(route.name));
+  const active = (r: Route) => r.name === route.name || (r.name === 'course' && ['lesson', 'video', 'stories', 'story', 'base'].includes(route.name)) || (r.name === 'home' && ['monologue', 'mine'].includes(route.name)) || (r.name === 'profile' && ['settings', 'accent'].includes(route.name));
   return (
     <div className="app">
       <a href="#main" className="skip">Pular para o conteúdo</a>
@@ -161,28 +165,48 @@ function Screen({ route, go }: { route: Route; go: (r: Route) => void }) {
       );
     case 'base':
       return <BaseTrack go={go} />;
+    case 'evolution':
+      return <Evolution go={go} />;
+    case 'checkpoint':
+      return <CheckpointScreen go={go} />;
+    case 'monologue':
+      return <Monologue go={go} />;
+    case 'mine':
+      return <MySentences go={go} />;
     default:
       return <Dashboard go={go} />;
   }
 }
 
-/** "Pense em inglês": de uma aula específica ou a fila personalizada de todas. */
+/** "Pense em inglês": de uma aula, dos meus erros, das minhas frases ou a fila personalizada geral. */
 function PracticeRoute({ lessonId, go }: { lessonId?: string; go: (r: Route) => void }) {
   const store = useStore();
+  const { production, custom, errorLog } = store.state;
   const lesson = lessonId ? findSpeakingLesson(lessonId) : undefined;
-  const queue = useMemo(() => {
-    if (lesson) return buildProductionQueue(lesson.drills, store.state.production, { max: 14, newLimit: 12, focusIds: lesson.drills.map((d) => d.id) });
-    const startedLessons = new Set(Object.keys(store.state.production).map((id) => id.replace(/-d\d+$/, '')));
-    const pool = allDrills.filter((d) => startedLessons.has(d.id.replace(/-d\d+$/, '')));
-    return buildProductionQueue(pool.length ? pool : allDrills.slice(0, 12), store.state.production, { max: 12, newLimit: 4 });
+  const mode = lesson ? 'lesson' : lessonId === 'erros' ? 'errors' : lessonId === 'minhas' ? 'mine' : 'mix';
+  const { queue, pool, title } = useMemo(() => {
+    if (lesson) return { title: lesson.title, pool: lesson.drills, queue: buildProductionQueue(lesson.drills, production, { max: 14, newLimit: 12, focusIds: lesson.drills.map((d) => d.id) }) };
+    if (mode === 'errors') {
+      const top = errorProfile(errorLog.slice(0, 120)).slice(0, 3).map((e) => e.id);
+      const drills = drillsForErrors(top);
+      return { title: 'Treino dos meus erros', pool: drills.length ? drills : allDrills, queue: buildErrorQueue(drills, production, 12) };
+    }
+    if (mode === 'mine') {
+      const q = buildProductionQueue(custom, production, { max: 12, newLimit: 12 });
+      return { title: 'Minhas frases', pool: custom, queue: q.length ? q : buildErrorQueue(custom, production, 12) };
+    }
+    const started = new Set(Object.keys(production).map((id) => id.replace(/-d\d+$/, '')));
+    const seen = allDrills.filter((d) => started.has(d.id.replace(/-d\d+$/, '')));
+    const all = [...(seen.length ? seen : allDrills.slice(0, 12)), ...custom];
+    return { title: 'Pense em inglês', pool: [...allDrills, ...custom], queue: buildProductionQueue(all, production, { max: 12, newLimit: 4 }) };
   }, [lessonId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!queue.length) {
     return (
       <main className="complete" id="main">
         <div>
-          <h1>Tudo em dia!</h1>
-          <p className="muted">Nenhuma frase vencida agora. Comece uma aula nova ou converse com a Maya.</p>
+          <h1>{mode === 'errors' ? 'Sem erros registrados ainda' : 'Tudo em dia!'}</h1>
+          <p className="muted">{mode === 'errors' ? 'Pratique algumas aulas: o treino de erros se monta sozinho a partir do que você errar.' : 'Nenhuma frase vencida agora. Comece uma aula nova ou converse com a Maya.'}</p>
           <button className="btn btn-primary" onClick={() => go({ name: 'course' })}>Ir para o curso</button>
         </div>
       </main>
@@ -190,14 +214,20 @@ function PracticeRoute({ lessonId, go }: { lessonId?: string; go: (r: Route) => 
   }
   return (
     <ProductionSession
-      title={lesson ? lesson.title : 'Pense em inglês'}
+      title={title}
       queue={queue}
-      pool={lesson ? lesson.drills : allDrills}
+      pool={pool}
       onExit={() => (lesson ? go({ name: 'lesson', id: lesson.id }) : go({ name: 'home' }))}
-      onDone={() => {
+      onDone={(attempts) => {
         if (lesson) {
-          store.set((s) => ({ ...s, lessons: { ...s.lessons, [lesson.id]: { ...s.lessons[lesson.id], practice: true, article: true } } }));
-          store.track('lessons');
+          // domínio: a aula só conta como concluída com ≥ 70% de acerto na primeira tentativa
+          const acc = firstTryAccuracy(attempts);
+          if (acc >= 0.7) {
+            store.set((s) => ({ ...s, lessons: { ...s.lessons, [lesson.id]: { ...s.lessons[lesson.id], practice: true, article: true } } }));
+            store.track('lessons');
+          } else {
+            store.toast({ title: `Acerto de primeira: ${Math.round(acc * 100)}%`, body: 'A aula fecha com 70%. As frases erradas voltam amanhã; refaça a prática.', kind: 'info' });
+          }
         } else store.track('reviews', queue.length);
       }}
     />

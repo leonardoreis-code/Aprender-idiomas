@@ -11,8 +11,15 @@ ELEVENLABS_API_KEY=sk_... npm start      # http://localhost:8787  (sem a chave t
 # desenvolvimento
 npm run dev:api   # backend na 8787
 npm run dev       # front com hot reload (proxy /api → 8787)
-npm test          # 46 testes (domínio + validação de todo o conteúdo)
+npm test          # 61 testes (domínio + validação de todo o conteúdo)
 ```
+
+## Como o aprendizado é comprovado
+- **Checkpoint de fala** (8 min, a cada 4 semanas): 12 frases PT→EN que não existem no curso + 2 falas livres.
+  Gera o **Índice de fala** (precisão, segundos por palavra, palavras por minuto) e compara com a linha de base.
+- **Evolução**: gráficos dos checkpoints e evidência semanal automática (minutos falando, retenção real, velocidade).
+- **Plano de 6 meses**: 26 semanas em 4 fases, com metas semanais de minutos falando. Ver [`docs/PLANO-6-MESES.md`](docs/PLANO-6-MESES.md)
+  e as 66 melhorias em [`docs/MELHORIAS.md`](docs/MELHORIAS.md).
 
 ## O que tem
 - **Pense em inglês**: cada frase sobe uma escada de 5 degraus (montar com blocos → bloco a bloco → escrever →
