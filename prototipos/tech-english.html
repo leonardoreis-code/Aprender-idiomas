@@ -1,0 +1,929 @@
+<title>Standup & Interview Lab</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: sala de reunião — faixa de "call" no topo, abas como pauta da reunião, cartões-post-it só onde há ação. */
+:root {
+  --bg: #eef1f6;
+  --panel: #ffffff;
+  --panel-2: #e3e8f1;
+  --ink: #141b2d;
+  --ink-2: #48526a;
+  --ink-3: #6b7489;
+  --line: #d3dae6;
+  --cobalt: #2448d8;
+  --cobalt-soft: #dfe6ff;
+  --sticky: #ffd34d;
+  --sticky-ink: #3a2c00;
+  --mint: #0f8a6a;
+  --mint-soft: #d8f3ea;
+  --coral: #c8432f;
+  --coral-soft: #fbe3de;
+  --focus: #2448d8;
+  --font-display: 'Bricolage Grotesque', 'Segoe UI', system-ui, sans-serif;
+  --font-body: 'IBM Plex Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, 'SFMono-Regular', Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0f1420; --panel: #171e2d; --panel-2: #212a3d; --ink: #e9edf6; --ink-2: #b4bdd0; --ink-3: #8a94aa; --line: #2c3650;
+    --cobalt: #7d9bff; --cobalt-soft: #1f2b52; --sticky: #f2c23a; --sticky-ink: #2a1f00; --mint: #4fd1a8; --mint-soft: #143a30;
+    --coral: #ff8f7c; --coral-soft: #3d201c; --focus: #9db4ff; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0f1420; --panel: #171e2d; --panel-2: #212a3d; --ink: #e9edf6; --ink-2: #b4bdd0; --ink-3: #8a94aa; --line: #2c3650;
+  --cobalt: #7d9bff; --cobalt-soft: #1f2b52; --sticky: #f2c23a; --sticky-ink: #2a1f00; --mint: #4fd1a8; --mint-soft: #143a30;
+  --coral: #ff8f7c; --coral-soft: #3d201c; --focus: #9db4ff; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 16px; line-height: 1.55; }
+h1, h2, h3 { font-family: var(--font-display); line-height: 1.1; margin: 0; text-wrap: balance; letter-spacing: -0.015em; }
+button, input, textarea, select { font: inherit; color: inherit; }
+button { cursor: pointer; }
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; border-radius: 6px; }
+.wrap { max-width: 1040px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.mono { font-family: var(--font-mono); }
+.label { font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-3); }
+
+/* Hero */
+.hero { padding-block: 28px 18px; display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 28px; align-items: center; }
+.hero h1 { font-size: clamp(30px, 5vw, 48px); font-weight: 800; }
+.hero h1 em { font-style: normal; background: linear-gradient(transparent 62%, var(--sticky) 62%); padding: 0 2px; color: inherit; }
+.hero p { color: var(--ink-2); max-width: 56ch; margin: 12px 0 0; }
+.hero-meta { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
+.pill { display: inline-flex; align-items: center; gap: 6px; font-family: var(--font-mono); font-size: 12.5px; padding: 4px 10px; border-radius: 999px; background: var(--panel); border: 1px solid var(--line); color: var(--ink-2); }
+.pill b { color: var(--ink); font-weight: 500; }
+.call svg { width: 100%; height: auto; display: block; }
+@media (max-width: 760px) { .hero { grid-template-columns: 1fr; } .call { order: -1; max-width: 420px; } }
+
+/* Tabs */
+.tabs { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--bg); border-bottom: 1px solid var(--line); }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--bg); }
+.tabs nav { display: flex; gap: 4px; overflow-x: auto; scrollbar-width: none; padding-block: 8px; }
+.tabs a { flex: none; text-decoration: none; color: var(--ink-2); font-weight: 600; padding: 10px 14px; border-radius: 10px; min-height: 44px; display: inline-flex; align-items: center; gap: 8px; }
+.tabs a:hover { background: var(--panel-2); }
+.tabs a[aria-current="page"] { background: var(--ink); color: var(--bg); }
+.tabs a .n { font-family: var(--font-mono); font-size: 11px; opacity: 0.7; }
+
+main { padding-block: 24px 64px; }
+.view-head { display: flex; flex-wrap: wrap; gap: 12px 24px; align-items: end; justify-content: space-between; margin-bottom: 18px; }
+.view-head h2 { font-size: clamp(24px, 3.4vw, 32px); }
+.view-head p { color: var(--ink-2); margin: 6px 0 0; max-width: 62ch; }
+
+.grid-2 { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 18px; }
+@media (max-width: 820px) { .grid-2 { grid-template-columns: 1fr; } }
+.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 18px; min-width: 0; }
+.panel h3 { font-size: 19px; margin-bottom: 4px; }
+.stack { display: grid; gap: 14px; }
+
+/* Controls */
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; padding: 0 16px; border-radius: 10px; border: 1px solid var(--line); background: var(--panel); font-weight: 600; }
+.btn:hover { border-color: var(--ink-3); }
+.btn-primary { background: var(--cobalt); color: #fff; border-color: var(--cobalt); }
+:root[data-theme="dark"] .btn-primary { color: #0b1020; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .btn-primary { color: #0b1020; } }
+.btn-primary:hover { filter: brightness(1.08); border-color: var(--cobalt); }
+.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.btn.rec { background: var(--coral); border-color: var(--coral); color: #fff; }
+.btn-row { display: flex; flex-wrap: wrap; gap: 8px; }
+.icon-btn { width: 40px; height: 40px; border-radius: 10px; border: 1px solid var(--line); background: var(--panel); display: inline-grid; place-items: center; flex: none; }
+.icon-btn:hover { border-color: var(--cobalt); color: var(--cobalt); }
+.icon-btn.playing { background: var(--cobalt); color: #fff; border-color: var(--cobalt); }
+textarea, input[type="search"], select { width: 100%; border: 1px solid var(--line); background: var(--panel); border-radius: 10px; padding: 10px 12px; }
+textarea { min-height: 92px; resize: vertical; line-height: 1.5; }
+textarea:focus, input:focus, select:focus { outline: none; border-color: var(--cobalt); box-shadow: 0 0 0 3px var(--cobalt-soft); }
+.field { display: grid; gap: 6px; }
+.field-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.field-head label { font-weight: 600; }
+.starters { display: flex; flex-wrap: wrap; gap: 6px; }
+.starter { font-size: 13.5px; padding: 5px 10px; border-radius: 999px; border: 1px dashed var(--ink-3); background: transparent; color: var(--ink-2); min-height: 32px; }
+.starter:hover { border-style: solid; color: var(--cobalt); border-color: var(--cobalt); }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { padding: 6px 12px; border-radius: 999px; border: 1px solid var(--line); background: var(--panel); min-height: 36px; font-size: 14px; }
+.chip[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+
+/* Sticky note (o único elemento "objeto" forte da página) */
+.sticky { background: var(--sticky); color: var(--sticky-ink); border-radius: 4px 4px 14px 4px; padding: 18px 18px 22px; box-shadow: 0 1px 0 rgba(0,0,0,.08), 0 12px 24px -14px rgba(60,40,0,.5); transform: rotate(-0.6deg); }
+.sticky .label { color: color-mix(in srgb, var(--sticky-ink) 70%, transparent); }
+.sticky p { margin: 8px 0 0; font-size: 17px; line-height: 1.6; }
+.sticky .btn { background: rgba(255,255,255,.55); border-color: rgba(0,0,0,.15); color: var(--sticky-ink); }
+
+.meter { display: flex; gap: 14px; flex-wrap: wrap; font-family: var(--font-mono); font-size: 13px; color: var(--ink-2); }
+.meter b { color: var(--ink); font-weight: 500; }
+.meter .warn b { color: var(--coral); }
+.live { font-size: 14px; color: var(--ink-3); min-height: 22px; font-style: italic; }
+
+/* Feedback */
+.fb { display: grid; gap: 14px; }
+.scores { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px; }
+.score { border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; }
+.score .v { font-family: var(--font-display); font-size: 26px; font-weight: 800; font-variant-numeric: tabular-nums; }
+.bar { height: 6px; background: var(--panel-2); border-radius: 6px; overflow: hidden; margin-top: 6px; }
+.bar span { display: block; height: 100%; background: var(--cobalt); border-radius: 6px; }
+.fix { border-left: 3px solid var(--coral); padding: 6px 0 6px 12px; }
+.fix s { color: var(--coral); text-decoration-thickness: 2px; }
+.fix ins { text-decoration: none; color: var(--mint); font-weight: 600; }
+.fix small { display: block; color: var(--ink-2); }
+.better { background: var(--mint-soft); border-radius: 10px; padding: 12px 14px; }
+.star-row { display: flex; gap: 6px; flex-wrap: wrap; }
+.star-cell { flex: 1 1 110px; border-radius: 8px; padding: 8px 10px; font-size: 13.5px; border: 1px solid var(--line); }
+.star-cell.ok { background: var(--mint-soft); border-color: transparent; }
+.star-cell.miss { background: var(--coral-soft); border-color: transparent; }
+.star-cell b { display: block; font-family: var(--font-mono); font-size: 12px; letter-spacing: .06em; }
+.note { font-size: 14px; color: var(--ink-2); background: var(--panel-2); border-radius: 10px; padding: 10px 12px; }
+.spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid currentColor; border-right-color: transparent; border-radius: 50%; animation: spin .8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Interview */
+.q-layout { display: grid; grid-template-columns: minmax(0, 300px) minmax(0, 1fr); gap: 18px; align-items: start; }
+@media (max-width: 860px) { .q-layout { grid-template-columns: 1fr; } }
+.q-list { display: grid; gap: 6px; max-height: 560px; overflow-y: auto; padding-right: 4px; }
+@media (max-width: 860px) { .q-list { max-height: 260px; } }
+.q-item { text-align: left; border: 1px solid var(--line); background: var(--panel); border-radius: 10px; padding: 10px 12px; display: grid; gap: 2px; }
+.q-item[aria-current="true"] { border-color: var(--cobalt); box-shadow: inset 3px 0 0 var(--cobalt); }
+.q-item span { font-size: 14.5px; }
+.q-item small { color: var(--ink-3); font-size: 12.5px; }
+.q-item .done { color: var(--mint); font-family: var(--font-mono); font-size: 11.5px; }
+.question { font-family: var(--font-display); font-size: clamp(21px, 2.6vw, 27px); font-weight: 600; }
+.framework { display: flex; gap: 0; border-radius: 10px; overflow: hidden; border: 1px solid var(--line); }
+.framework div { flex: 1; padding: 8px 10px; font-size: 13px; border-right: 1px solid var(--line); min-width: 0; }
+.framework div:last-child { border-right: 0; }
+.framework b { display: block; font-family: var(--font-mono); font-size: 11.5px; color: var(--cobalt); letter-spacing: .06em; }
+@media (max-width: 520px) { .framework { flex-direction: column; } .framework div { border-right: 0; border-bottom: 1px solid var(--line); } }
+details summary { cursor: pointer; font-weight: 600; min-height: 32px; }
+.outline { margin: 8px 0 0; padding-left: 20px; color: var(--ink-2); }
+.outline li + li { margin-top: 4px; }
+.timer { font-family: var(--font-mono); font-size: 22px; font-variant-numeric: tabular-nums; }
+.timer.low { color: var(--coral); }
+
+/* Phrases */
+.toolbar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: 14px; }
+.toolbar input { max-width: 320px; }
+.phrase-table { width: 100%; border-collapse: collapse; }
+.phrase-table td { border-top: 1px solid var(--line); padding: 10px 8px; vertical-align: top; }
+.phrase-table tr:first-child td { border-top: 0; }
+.phrase-table .en { font-weight: 600; }
+.phrase-table .pt { color: var(--ink-2); font-size: 14.5px; }
+.phrase-table .mod { font-family: var(--font-mono); font-size: 11.5px; color: var(--ink-3); white-space: nowrap; }
+.phrase-table td:last-child { width: 96px; white-space: nowrap; text-align: right; }
+@media (max-width: 600px) { .phrase-table .mod { display: none; } }
+
+/* Pronunciation */
+.words { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 12px; }
+.word { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 14px; display: grid; gap: 6px; }
+.word-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.word h3 { font-size: 22px; }
+.ipa { font-family: 'Charis SIL', 'Gentium Plus', Georgia, serif; color: var(--ink-2); }
+.trap { font-size: 13.5px; }
+.trap .no { color: var(--coral); text-decoration: line-through; }
+.trap .yes { color: var(--mint); font-weight: 600; }
+.test-res { font-size: 13px; font-family: var(--font-mono); min-height: 18px; }
+
+/* Plan */
+.track { display: grid; gap: 0; position: relative; }
+.mod-row { display: grid; grid-template-columns: 64px minmax(0, 1fr); gap: 16px; position: relative; padding-bottom: 22px; }
+.mod-row::before { content: ""; position: absolute; left: 31px; top: 44px; bottom: 0; width: 2px; background: var(--line); }
+.mod-row:last-child::before { display: none; }
+.wk { width: 64px; height: 44px; border-radius: 10px; background: var(--panel); border: 1px solid var(--line); display: grid; place-items: center; font-family: var(--font-mono); font-size: 12.5px; text-align: center; line-height: 1.15; color: var(--ink-2); }
+.mod-row.focus .wk { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.mod-body h3 { font-size: 20px; }
+.mod-body p { margin: 4px 0 0; color: var(--ink-2); }
+.mod-body .can { margin-top: 8px; font-size: 14px; }
+.mod-body .can b { font-family: var(--font-mono); font-size: 11.5px; letter-spacing: .06em; color: var(--mint); }
+.routine { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+@media (max-width: 760px) { .routine { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.routine div { border-top: 3px solid var(--cobalt); padding-top: 8px; }
+.routine b { display: block; font-family: var(--font-mono); font-size: 12px; color: var(--ink-3); }
+.routine span { font-weight: 600; }
+.routine p { margin: 2px 0 0; font-size: 14px; color: var(--ink-2); }
+
+footer { border-top: 1px solid var(--line); padding-block: 20px 36px; color: var(--ink-3); font-size: 13.5px; }
+
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
+</style>
+
+<div class="wrap">
+  <header class="hero">
+    <div>
+      <span class="label">Trilha de inglês · tecnologia e dados · B1 → B2</span>
+      <h1 style="margin-top:8px">Fale na <em>daily</em> e na entrevista sem travar.</h1>
+      <p>Um modelo de treino para quem trabalha com dados: monte sua fala da daily, simule perguntas reais de entrevista e receba correção de estrutura, gramática e vocabulário. Tudo em blocos curtos de 10 a 15 minutos.</p>
+      <div class="hero-meta">
+        <span class="pill"><b>8</b> módulos</span>
+        <span class="pill"><b>45</b> expressões-chave</span>
+        <span class="pill"><b>14</b> perguntas de entrevista</span>
+        <span class="pill"><b>18</b> armadilhas de pronúncia</span>
+      </div>
+    </div>
+    <div class="call" aria-hidden="true">
+      <svg viewBox="0 0 420 270">
+        <rect x="4" y="4" width="412" height="262" rx="18" fill="var(--panel)" stroke="var(--line)" stroke-width="2"/>
+        <g>
+          <rect x="18" y="18" width="186" height="104" rx="10" fill="var(--panel-2)"/>
+          <circle cx="111" cy="58" r="17" fill="var(--ink-3)" opacity=".55"/>
+          <path d="M80 112c4-18 16-26 31-26s27 8 31 26" fill="var(--ink-3)" opacity=".55"/>
+          <rect x="26" y="98" width="62" height="16" rx="5" fill="var(--panel)"/><text x="32" y="110" font-family="IBM Plex Mono, monospace" font-size="10" fill="var(--ink-2)">Priya · PM</text>
+        </g>
+        <g>
+          <rect x="216" y="18" width="186" height="104" rx="10" fill="var(--panel-2)"/>
+          <circle cx="309" cy="58" r="17" fill="var(--ink-3)" opacity=".55"/>
+          <path d="M278 112c4-18 16-26 31-26s27 8 31 26" fill="var(--ink-3)" opacity=".55"/>
+          <rect x="224" y="98" width="76" height="16" rx="5" fill="var(--panel)"/><text x="230" y="110" font-family="IBM Plex Mono, monospace" font-size="10" fill="var(--ink-2)">Tom · Data Eng</text>
+        </g>
+        <g>
+          <rect x="18" y="134" width="186" height="118" rx="10" fill="var(--cobalt-soft)" stroke="var(--cobalt)" stroke-width="3"/>
+          <circle cx="111" cy="176" r="18" fill="var(--cobalt)"/>
+          <path d="M78 236c4-20 17-29 33-29s29 9 33 29" fill="var(--cobalt)"/>
+          <rect x="26" y="226" width="40" height="16" rx="5" fill="var(--cobalt)"/><text x="33" y="238" font-family="IBM Plex Mono, monospace" font-size="10" fill="#fff">You</text>
+          <g fill="var(--cobalt)">
+            <rect x="160" y="200" width="4" height="12" rx="2"><animate attributeName="height" values="12;26;8;20;12" dur="1.1s" repeatCount="indefinite"/><animate attributeName="y" values="200;193;202;195;200" dur="1.1s" repeatCount="indefinite"/></rect>
+            <rect x="168" y="196" width="4" height="20" rx="2"><animate attributeName="height" values="20;8;24;12;20" dur="1.1s" repeatCount="indefinite"/><animate attributeName="y" values="196;202;194;200;196" dur="1.1s" repeatCount="indefinite"/></rect>
+            <rect x="176" y="199" width="4" height="14" rx="2"><animate attributeName="height" values="14;22;10;26;14" dur="1.1s" repeatCount="indefinite"/><animate attributeName="y" values="199;195;201;193;199" dur="1.1s" repeatCount="indefinite"/></rect>
+            <rect x="184" y="202" width="4" height="8" rx="2"><animate attributeName="height" values="8;18;24;10;8" dur="1.1s" repeatCount="indefinite"/><animate attributeName="y" values="202;197;194;201;202" dur="1.1s" repeatCount="indefinite"/></rect>
+          </g>
+        </g>
+        <g transform="rotate(2 309 193)">
+          <rect x="226" y="136" width="166" height="114" rx="4" fill="var(--sticky)"/>
+          <text x="238" y="158" font-family="IBM Plex Mono, monospace" font-size="10.5" fill="var(--sticky-ink)" letter-spacing="1">STANDUP</text>
+          <text x="238" y="182" font-family="IBM Plex Sans, sans-serif" font-size="12.5" fill="var(--sticky-ink)">✓ Yesterday: fixed the</text>
+          <text x="238" y="198" font-family="IBM Plex Sans, sans-serif" font-size="12.5" fill="var(--sticky-ink)">   orders pipeline</text>
+          <text x="238" y="216" font-family="IBM Plex Sans, sans-serif" font-size="12.5" fill="var(--sticky-ink)">→ Today: dbt tests</text>
+          <text x="238" y="234" font-family="IBM Plex Sans, sans-serif" font-size="12.5" fill="var(--sticky-ink)">! Blocked: API access</text>
+        </g>
+      </svg>
+    </div>
+  </header>
+</div>
+
+<div class="tabs">
+  <div class="wrap">
+    <nav aria-label="Seções">
+      <a href="#daily" data-view="daily"><span class="n">01</span> Daily</a>
+      <a href="#entrevista" data-view="entrevista"><span class="n">02</span> Entrevista</a>
+      <a href="#frases" data-view="frases"><span class="n">03</span> Expressões</a>
+      <a href="#pronuncia" data-view="pronuncia"><span class="n">04</span> Pronúncia</a>
+      <a href="#plano" data-view="plano"><span class="n">05</span> Plano de 8 semanas</a>
+    </nav>
+  </div>
+</div>
+
+<main class="wrap">
+
+  <!-- DAILY -->
+  <section id="v-daily" data-v="daily" aria-labelledby="h-daily">
+    <div class="view-head">
+      <div>
+        <h2 id="h-daily">Monte sua fala da daily</h2>
+        <p>Três blocos, 45 a 60 segundos no total. Use os começos de frase, ouça a versão pronta, depois grave a sua e peça correção.</p>
+      </div>
+    </div>
+    <div class="grid-2">
+      <div class="panel stack">
+        <div class="field">
+          <div class="field-head"><label for="d-y">Yesterday <span class="label">· passado simples</span></label></div>
+          <div class="starters" data-for="d-y"></div>
+          <textarea id="d-y">I finished the migration of the orders pipeline to Airflow and fixed a bug in the deduplication step.</textarea>
+        </div>
+        <div class="field">
+          <div class="field-head"><label for="d-t">Today <span class="label">· going to / will</span></label></div>
+          <div class="starters" data-for="d-t"></div>
+          <textarea id="d-t">Today I'm going to add data quality tests with dbt and review Tom's pull request.</textarea>
+        </div>
+        <div class="field">
+          <div class="field-head"><label for="d-b">Blockers <span class="label">· pedir ajuda</span></label></div>
+          <div class="starters" data-for="d-b"></div>
+          <textarea id="d-b">I'm blocked on access to the payments API. Priya, could you help me with that after the call?</textarea>
+        </div>
+        <p class="note">Exemplo preenchido. Troque pelo que você fez de verdade: falar da própria rotina fixa muito mais que decorar frases.</p>
+      </div>
+
+      <div class="stack">
+        <div class="sticky">
+          <span class="label">Sua fala pronta</span>
+          <p id="d-script" lang="en"></p>
+          <div class="meter" id="d-meter" style="margin-top:10px;color:var(--sticky-ink)"></div>
+          <div class="btn-row" style="margin-top:12px">
+            <button class="btn" id="d-play" type="button">▶ Ouvir</button>
+            <button class="btn" id="d-play-slow" type="button">▶ Devagar</button>
+            <button class="btn" id="d-copy" type="button">Copiar</button>
+          </div>
+        </div>
+
+        <div class="panel stack">
+          <div>
+            <h3>Agora fale sem ler</h3>
+            <p style="margin:2px 0 0;color:var(--ink-2);font-size:14.5px">Grave (ou digite) como você falaria na call. A correção compara com a estrutura de uma boa daily.</p>
+          </div>
+          <div class="field">
+            <div class="field-head">
+              <label for="d-mine">Minha versão</label>
+              <button class="btn mic-btn" type="button" data-target="d-mine" hidden>● Gravar</button>
+            </div>
+            <textarea id="d-mine" lang="en" placeholder="Yesterday I…"></textarea>
+            <div class="live" data-live="d-mine" aria-live="polite"></div>
+          </div>
+          <div class="btn-row">
+            <button class="btn btn-primary" id="d-fb" type="button">Corrigir minha daily</button>
+          </div>
+          <div id="d-out" aria-live="polite"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ENTREVISTA -->
+  <section id="v-entrevista" data-v="entrevista" aria-labelledby="h-int" hidden>
+    <div class="view-head">
+      <div>
+        <h2 id="h-int">Simulador de entrevista</h2>
+        <p>Perguntas que aparecem em vagas de Data Engineer, Analytics Engineer e Data Analyst. Responda em até 2 minutos; a correção avalia estrutura, clareza e gramática e devolve uma pergunta de follow-up.</p>
+      </div>
+      <div class="chips" role="group" aria-label="Tipo de pergunta" id="q-filter"></div>
+    </div>
+    <div class="q-layout">
+      <div class="q-list" id="q-list" role="list"></div>
+      <div class="panel stack" id="q-panel"></div>
+    </div>
+  </section>
+
+  <!-- FRASES -->
+  <section id="v-frases" data-v="frases" aria-labelledby="h-fr" hidden>
+    <div class="view-head">
+      <div>
+        <h2 id="h-fr">Expressões que destravam reuniões</h2>
+        <p>Aprenda em blocos prontos, não palavra por palavra. Ouça, repita em voz alta junto com o áudio (shadowing) e use na próxima call.</p>
+      </div>
+    </div>
+    <div class="toolbar">
+      <label class="sr-only" for="f-search">Buscar expressão</label>
+      <input type="search" id="f-search" placeholder="Buscar em inglês ou português…">
+      <div class="chips" role="group" aria-label="Módulo" id="f-filter"></div>
+    </div>
+    <div class="panel" style="padding:6px 10px; overflow-x:auto">
+      <table class="phrase-table"><tbody id="f-body"></tbody></table>
+    </div>
+  </section>
+
+  <!-- PRONÚNCIA -->
+  <section id="v-pronuncia" data-v="pronuncia" aria-labelledby="h-pr" hidden>
+    <div class="view-head">
+      <div>
+        <h2 id="h-pr">Armadilhas de pronúncia em tech</h2>
+        <p>Palavras que brasileiros de tecnologia mais pronunciam de um jeito que trava a compreensão. O alvo é ser entendido, não ter sotaque nativo.</p>
+      </div>
+    </div>
+    <div class="words" id="w-grid"></div>
+  </section>
+
+  <!-- PLANO -->
+  <section id="v-plano" data-v="plano" aria-labelledby="h-pl" hidden>
+    <div class="view-head">
+      <div>
+        <h2 id="h-pl">Plano de 8 semanas</h2>
+        <p>Duas semanas de reuniões, três de explicar seu trabalho, três de entrevista. Cada módulo tem um objetivo que você consegue testar na vida real.</p>
+      </div>
+    </div>
+    <div class="grid-2" style="align-items:start">
+      <div class="track" id="p-track"></div>
+      <div class="stack">
+        <div class="panel">
+          <h3>Rotina diária · 15 min</h3>
+          <div class="routine" style="margin-top:12px">
+            <div><b>3 min</b><span>Revisar</span><p>Expressões da semana, em voz alta.</p></div>
+            <div><b>4 min</b><span>Daily</span><p>Montar e gravar a fala de hoje.</p></div>
+            <div><b>6 min</b><span>Entrevista</span><p>Uma pergunta, com correção.</p></div>
+            <div><b>2 min</b><span>Pronúncia</span><p>Duas palavras-armadilha.</p></div>
+          </div>
+        </div>
+        <div class="panel">
+          <h3>Por que esse formato</h3>
+          <ul class="outline" style="color:var(--ink-2)">
+            <li><b>Blocos prontos (chunks)</b> saem mais rápido sob pressão do que frases montadas palavra por palavra.</li>
+            <li><b>Falar da sua própria rotina</b> gera produção significativa, que fixa mais que repetir frases alheias.</li>
+            <li><b>Correção logo depois da resposta</b> com a forma certa ao lado da sua (feedback corretivo explícito).</li>
+            <li><b>Revisão espaçada</b> das expressões erradas, que voltam nos dias seguintes.</li>
+            <li><b>Ensaio da situação real</b>: limite de tempo e follow-up, como numa entrevista de verdade.</li>
+          </ul>
+          <p class="note" style="margin-top:12px">Pré-requisito: inglês A2 (entende frases simples). Abaixo disso, comece pelas unidades A1 do app Fluente.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="wrap">
+  Protótipo da trilha "Inglês para tecnologia e dados" do app Fluente. Áudio pela voz do Claude quando disponível, senão pela voz do sistema. A correção usa o Claude e precisa da sua permissão no primeiro uso.
+</footer>
+
+<script>
+/* ======================= DADOS ======================= */
+const MODULES = [
+  { id: 'm1', wk: 'S1', title: 'Daily standup', desc: 'Yesterday / today / blockers com os tempos verbais certos.', can: 'Dou minha atualização em 60 s sem ler.' },
+  { id: 'm2', wk: 'S2', title: 'Bloqueios, pedidos e dependências', desc: 'Pedir ajuda, cobrar prazo, negociar prioridade com educação.', can: 'Peço desbloqueio a alguém pelo nome, com prazo.' },
+  { id: 'm3', wk: 'S3', title: 'Sobreviver à reunião', desc: 'Pedir para repetir, ganhar tempo, interromper, discordar.', can: 'Não fico em silêncio quando não entendo.' },
+  { id: 'm4', wk: 'S4', title: 'Explicar pipelines e dados', desc: 'Fontes, transformações, qualidade, latência, custo.', can: 'Explico um pipeline meu de ponta a ponta em 2 min.' },
+  { id: 'm5', wk: 'S5', title: 'Métricas e resultados', desc: 'Números, tendências, impacto de negócio, incidentes.', can: 'Apresento um resultado com número e impacto.' },
+  { id: 'm6', wk: 'S6', title: 'Pitch: "Tell me about yourself"', desc: 'Presente → passado → por que esta vaga, em 90 s.', can: 'Tenho um pitch de 90 s ensaiado e natural.' },
+  { id: 'm7', wk: 'S7', title: 'Entrevista comportamental (STAR)', desc: 'Conflito, falha, prazo apertado, projeto de orgulho.', can: 'Conto 4 histórias STAR com resultado medido.' },
+  { id: 'm8', wk: 'S8', title: 'Entrevista técnica de dados', desc: 'Esclarecer → abordagem → trade-offs → fechamento.', can: 'Penso em voz alta num design de pipeline.' },
+];
+
+const PHRASES = [
+  // m1 daily
+  ['m1', 'Yesterday I wrapped up…', 'Ontem eu finalizei…'],
+  ['m1', "Today I'm going to focus on…", 'Hoje vou focar em…'],
+  ['m1', "I'm still working on…", 'Ainda estou trabalhando em…'],
+  ['m1', 'I made some progress on…', 'Avancei um pouco em…'],
+  ['m1', 'No blockers on my side.', 'Sem bloqueios do meu lado.'],
+  ['m1', "That's it from me.", 'É isso da minha parte.'],
+  // m2 blockers
+  ['m2', "I'm blocked on…", 'Estou bloqueado em…'],
+  ['m2', "I'm waiting on the API keys from the platform team.", 'Estou esperando as chaves da API do time de plataforma.'],
+  ['m2', 'Could you help me with that after the call?', 'Você pode me ajudar com isso depois da call?'],
+  ['m2', 'Can we sync on this offline?', 'Podemos alinhar isso fora da reunião?'],
+  ['m2', 'Is there an ETA for that?', 'Tem previsão para isso?'],
+  ['m2', "I'll follow up with you on Slack.", 'Vou te dar um retorno pelo Slack.'],
+  ['m2', 'Which one should I prioritize?', 'Qual delas devo priorizar?'],
+  // m3 meetings
+  ['m3', 'Sorry, could you say that again?', 'Desculpe, pode repetir?'],
+  ['m3', 'Just to make sure I understood…', 'Só para confirmar se entendi…'],
+  ['m3', 'Let me think about that for a second.', 'Deixa eu pensar um segundo.'],
+  ['m3', 'Sorry to interrupt, but…', 'Desculpe interromper, mas…'],
+  ['m3', 'I see your point, but…', 'Entendo seu ponto, mas…'],
+  ['m3', "I'm not sure, but I'll find out and get back to you.", 'Não tenho certeza, mas vou verificar e te retorno.'],
+  ['m3', 'You’re on mute.', 'Você está no mudo.'],
+  // m4 pipelines
+  ['m4', 'The pipeline ingests data from three sources.', 'O pipeline ingere dados de três fontes.'],
+  ['m4', 'We load the raw data into the warehouse first.', 'Primeiro carregamos os dados brutos no warehouse.'],
+  ['m4', 'The job runs every hour.', 'O job roda a cada hora.'],
+  ['m4', 'We had a schema change upstream.', 'Teve uma mudança de schema na origem.'],
+  ['m4', 'The data is deduplicated before it hits the dashboard.', 'Os dados são deduplicados antes de chegar ao dashboard.'],
+  ['m4', 'It scales well, but it costs more.', 'Escala bem, mas custa mais.'],
+  ['m4', 'The bottleneck is the join on the events table.', 'O gargalo é o join na tabela de eventos.'],
+  // m5 metrics
+  ['m5', 'Conversion went up by twelve percent.', 'A conversão subiu doze por cento.'],
+  ['m5', 'We reduced the runtime from two hours to fifteen minutes.', 'Reduzimos o tempo de execução de duas horas para quinze minutos.'],
+  ['m5', 'The numbers look off for last week.', 'Os números da semana passada parecem errados.'],
+  ['m5', 'The root cause was a late-arriving file.', 'A causa raiz foi um arquivo que chegou atrasado.'],
+  ['m5', 'This saved the team about ten hours a week.', 'Isso economizou umas dez horas por semana para o time.'],
+  // m6 pitch
+  ['m6', "I'm a data engineer with five years of experience.", 'Sou engenheiro de dados com cinco anos de experiência.'],
+  ['m6', 'Currently I work at a fintech, where I…', 'Atualmente trabalho numa fintech, onde eu…'],
+  ['m6', 'Before that, I worked as a data analyst.', 'Antes disso, trabalhei como analista de dados.'],
+  ['m6', "What excites me about this role is…", 'O que me empolga nesta vaga é…'],
+  // m7 STAR
+  ['m7', 'The situation was…', 'A situação era…'],
+  ['m7', 'My task was to…', 'Minha tarefa era…'],
+  ['m7', 'So what I did was…', 'Então o que eu fiz foi…'],
+  ['m7', 'As a result, …', 'Como resultado, …'],
+  ['m7', 'Looking back, I would have…', 'Olhando para trás, eu teria…'],
+  // m8 tech
+  ['m8', 'Before I start, can I ask a few clarifying questions?', 'Antes de começar, posso fazer algumas perguntas para esclarecer?'],
+  ['m8', 'What is the expected data volume?', 'Qual o volume de dados esperado?'],
+  ['m8', 'One option would be… The trade-off is…', 'Uma opção seria… O trade-off é…'],
+  ['m8', 'To sum up, I would go with…', 'Resumindo, eu iria com…'],
+];
+
+const QUESTIONS = [
+  { id: 'q1', cat: 'pitch', en: 'Tell me about yourself.', pt: 'Fale sobre você.', fw: 'pitch',
+    outline: ['Presente: cargo + foco + 1 conquista com número', 'Passado: como chegou aqui (1–2 frases)', 'Futuro: por que esta vaga e esta empresa', 'Feche em ~90 segundos'] },
+  { id: 'q2', cat: 'pitch', en: 'Why do you want to work here?', pt: 'Por que você quer trabalhar aqui?', fw: 'pitch',
+    outline: ['Algo específico da empresa (produto, stack, dados)', 'Ligação com sua experiência', 'O que você quer aprender / entregar'] },
+  { id: 'q3', cat: 'behavioral', en: 'Tell me about a time you had a conflict with a stakeholder.', pt: 'Conte sobre um conflito com um stakeholder.', fw: 'star',
+    outline: ['S: quem era a pessoa e qual o desacordo', 'T: o que dependia de você', 'A: como ouviu, trouxe dados e negociou', 'R: acordo final + o que aprendeu'] },
+  { id: 'q4', cat: 'behavioral', en: 'Tell me about a time you failed.', pt: 'Conte sobre uma vez que você falhou.', fw: 'star',
+    outline: ['Escolha uma falha real, não um elogio disfarçado', 'Assuma a responsabilidade (I, não we)', 'O que você mudou depois', 'Resultado concreto da mudança'] },
+  { id: 'q5', cat: 'behavioral', en: 'Describe a project you are proud of.', pt: 'Descreva um projeto do qual você se orgulha.', fw: 'star',
+    outline: ['Contexto de negócio em 1 frase', 'Seu papel específico', 'Decisões técnicas e por quê', 'Impacto medido (tempo, custo, receita, qualidade)'] },
+  { id: 'q6', cat: 'behavioral', en: 'Tell me about a time you had to deliver under a tight deadline.', pt: 'Conte sobre uma entrega com prazo apertado.', fw: 'star',
+    outline: ['Qual era o prazo e por quê', 'Como priorizou / cortou escopo', 'Como comunicou riscos', 'Entregou o quê, quando'] },
+  { id: 'q7', cat: 'behavioral', en: 'How do you explain technical results to non-technical people?', pt: 'Como você explica resultados técnicos para não técnicos?', fw: 'star',
+    outline: ['Exemplo real de apresentação', 'Começou pelo impacto, não pelo método', 'Usou visual / analogia', 'Decisão que a pessoa tomou depois'] },
+  { id: 'q8', cat: 'technical', en: 'How would you design a pipeline to ingest app events every day?', pt: 'Como você desenharia um pipeline para ingerir eventos do app diariamente?', fw: 'tech',
+    outline: ['Esclarecer: volume, latência aceitável, consumidores', 'Ingestão: fila/streaming ou batch em object storage', 'Transformação: camadas raw → staging → marts', 'Qualidade, monitoramento, reprocessamento', 'Trade-offs: custo × latência'] },
+  { id: 'q9', cat: 'technical', en: 'What is the difference between ETL and ELT?', pt: 'Qual a diferença entre ETL e ELT?', fw: 'tech',
+    outline: ['Definir cada um em 1 frase', 'Onde ocorre a transformação', 'Por que ELT cresceu (warehouses na nuvem)', 'Quando você ainda usaria ETL'] },
+  { id: 'q10', cat: 'technical', en: 'How do you ensure data quality?', pt: 'Como você garante a qualidade dos dados?', fw: 'tech',
+    outline: ['Testes: unicidade, não nulo, integridade, frescor', 'Contratos com a origem', 'Alertas e donos dos dados', 'Exemplo de incidente que você evitou'] },
+  { id: 'q11', cat: 'technical', en: 'A dashboard is showing wrong numbers. How do you debug it?', pt: 'Um dashboard está mostrando números errados. Como você investiga?', fw: 'tech',
+    outline: ['Confirmar o que é "errado" e desde quando', 'Seguir a linhagem: dashboard → modelo → fonte', 'Checar cargas atrasadas, duplicados, joins, fuso', 'Corrigir, comunicar, adicionar teste'] },
+  { id: 'q12', cat: 'technical', en: 'Explain a window function to someone who does not know SQL.', pt: 'Explique uma window function para quem não sabe SQL.', fw: 'tech',
+    outline: ['Analogia simples (ranking dentro de cada grupo)', 'Diferença para GROUP BY: não junta as linhas', 'Exemplo: total acumulado de vendas por cliente'] },
+  { id: 'q13', cat: 'technical', en: 'When would you choose streaming over batch processing?', pt: 'Quando você escolheria streaming em vez de batch?', fw: 'tech',
+    outline: ['Depende do requisito de latência', 'Exemplos: fraude, alertas × relatórios diários', 'Custo e complexidade operacional', 'Meio-termo: micro-batch'] },
+  { id: 'q14', cat: 'closing', en: 'Do you have any questions for us?', pt: 'Você tem alguma pergunta para nós?', fw: 'pitch',
+    outline: ['Sempre tenha 2–3 perguntas', 'Como o time mede sucesso nesta vaga?', 'Como é o stack e a maior dor de dados hoje?', 'Quais os próximos passos do processo?'] },
+];
+
+const FRAMEWORKS = {
+  star: [['S', 'Situation · contexto'], ['T', 'Task · seu papel'], ['A', 'Action · o que VOCÊ fez'], ['R', 'Result · número/impacto']],
+  tech: [['1', 'Clarify · perguntas'], ['2', 'Approach · solução'], ['3', 'Trade-offs · custos'], ['4', 'Wrap up · resumo']],
+  pitch: [['NOW', 'Presente'], ['PAST', 'Trajetória'], ['WHY', 'Por que aqui'], ['90s', 'Tempo-alvo']],
+};
+
+const WORDS = [
+  ['data', '/ˈdeɪtə/ ou /ˈdætə/', 'dá-ta', 'DEI-ta ou DÉ-ta, as duas são aceitas'],
+  ['schema', '/ˈskiːmə/', 'xê-ma', 'SKII-ma, com som de K'],
+  ['cache', '/kæʃ/', 'ca-chê', 'kesh, uma sílaba só'],
+  ['query', '/ˈkwɪri/', 'qué-ri', 'KUÍ-ri'],
+  ['SQL', '/ˈsiːkwəl/ ou /ˌɛs kjuː ˈɛl/', 'és-qui-éli', '"sequel" ou "S-Q-L"'],
+  ['deploy', '/dɪˈplɔɪ/', 'DÉ-ploi', 'di-PLOI, tônica no fim'],
+  ['develop', '/dɪˈvɛləp/', 'de-ve-LÓ-pi', 'di-VÉ-lop, tônica no meio'],
+  ['determine', '/dɪˈtɜrmɪn/', 'de-ter-MAINE', 'di-TÂR-min'],
+  ['architecture', '/ˈɑrkɪtɛktʃər/', 'ar-xi-tec-tura', 'ÁR-ki-tek-tcher, com K'],
+  ['analytics', '/ˌænəˈlɪtɪks/', 'a-na-LÍ-ti-qui', 'a-na-LÍ-tiks, sem "i" no fim'],
+  ['pipeline', '/ˈpaɪplaɪn/', 'pipe-LINE', 'PAIP-lain, tônica no início'],
+  ['Python', '/ˈpaɪθɑn/', 'pái-ton', 'PÁI-θon, língua entre os dentes'],
+  ['throughput', '/ˈθruːpʊt/', 'trú-put', 'θRÚ-put, com TH'],
+  ['width', '/wɪdθ/', 'uídi', 'uídθ, termina com TH'],
+  ['null', '/nʌl/', 'nul', 'nâl, vogal aberta e curta'],
+  ['async', '/eɪˈsɪŋk/', 'a-sinc', 'ei-SINK'],
+  ['Azure', '/ˈæʒər/', 'a-ZÚ-re', 'É-jer'],
+  ['suite', '/swiːt/', 'su-í-te', 'suít, igual a "sweet"'],
+];
+
+/* ======================= CAPACIDADES ======================= */
+const cap = (name) => (window.claude && window.claude.use ? window.claude.use(name).catch(() => null) : Promise.resolve(null));
+let tts = null, dictation = null, sample = null;
+cap('tts').then((t) => { tts = t; if (t) t.onState(({ state }) => { if (state === 'idle') clearPlaying(); }); });
+cap('sample').then((s) => { sample = s; });
+cap('dictation').then((d) => {
+  dictation = d;
+  if (!d) return;
+  document.querySelectorAll('.mic-btn').forEach((b) => (b.hidden = false));
+  d.onPartial(({ text }) => { if (activeTarget) liveFor(activeTarget).textContent = text; });
+  d.onFinal(({ text }) => {
+    if (!activeTarget) return;
+    const ta = document.getElementById(activeTarget);
+    ta.value = (ta.value.trim() + ' ' + text.trim()).trim();
+    ta.dispatchEvent(new Event('input'));
+    liveFor(activeTarget).textContent = '';
+  });
+  d.onState(({ state, reason }) => {
+    const listening = state === 'listening' || state === 'starting';
+    document.querySelectorAll('.mic-btn').forEach((b) => {
+      const mine = b.dataset.target === activeTarget;
+      b.classList.toggle('rec', listening && mine);
+      b.textContent = listening && mine ? '■ Parar' : '● Gravar';
+    });
+    if (state === 'idle') {
+      if (reason === 'not_granted') document.querySelectorAll('.mic-btn').forEach((b) => (b.hidden = true));
+      if (activeTarget) liveFor(activeTarget).textContent = '';
+      activeTarget = null;
+    }
+  });
+});
+
+let activeTarget = null;
+const liveFor = (id) => document.querySelector(`[data-live="${id}"]`) || { textContent: '' };
+document.addEventListener('click', (e) => {
+  const b = e.target.closest('.mic-btn');
+  if (!b || !dictation) return;
+  if (activeTarget) { dictation.stop().catch(() => {}); return; }
+  activeTarget = b.dataset.target;
+  dictation.start({ language: 'en' }).catch((err) => {
+    activeTarget = null;
+    if (err && err.code === 'not_granted') document.querySelectorAll('.mic-btn').forEach((x) => (x.hidden = true));
+  });
+});
+
+let playingBtn = null;
+function clearPlaying() { if (playingBtn) playingBtn.classList.remove('playing'); playingBtn = null; }
+async function say(text, { rate = 1, voice = 'buttery', btn = null } = {}) {
+  clearPlaying();
+  if (btn) { btn.classList.add('playing'); playingBtn = btn; }
+  if (tts) {
+    try { await tts.speak(text, { language: 'en', rate, voice }); clearPlaying(); return; }
+    catch (err) { if (err && (err.code === 'stopped' || err.code === 'busy')) { clearPlaying(); return; } }
+  }
+  if ('speechSynthesis' in window) {
+    speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = 'en-US'; u.rate = rate * 0.95;
+    u.onend = u.onerror = clearPlaying;
+    speechSynthesis.speak(u);
+  } else clearPlaying();
+}
+
+const store = {
+  get(k, d) { try { const v = localStorage.getItem('sil:' + k); return v ? JSON.parse(v) : d; } catch { return d; } },
+  set(k, v) { try { localStorage.setItem('sil:' + k, JSON.stringify(v)); } catch {} },
+};
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const words = (s) => (s.trim().match(/\S+/g) || []).length;
+const SPEAKER = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9z" fill="currentColor"/><path d="M16.5 8.5a5 5 0 0 1 0 7"/></svg>';
+const TURTLE = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 15c0-4 3-7 7-7s7 3 7 7z"/><path d="M18 13h2a2 2 0 0 0 0-4h-1M6 15l-1 3M15 15l1 3"/></svg>';
+
+/* ======================= ROTEAMENTO ======================= */
+const VIEWS = ['daily', 'entrevista', 'frases', 'pronuncia', 'plano'];
+function route() {
+  const v = VIEWS.includes(location.hash.slice(1)) ? location.hash.slice(1) : 'daily';
+  document.querySelectorAll('[data-v]').forEach((s) => (s.hidden = s.dataset.v !== v));
+  document.querySelectorAll('.tabs a').forEach((a) => { if (a.dataset.view === v) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current'); });
+}
+window.addEventListener('hashchange', route);
+
+/* ======================= FEEDBACK (Claude) ======================= */
+async function askFeedback({ kind, question, answer, framework }) {
+  const rubric = kind === 'daily'
+    ? 'This is a daily standup update. Check: yesterday uses past simple; today uses going to / will / present continuous; blockers are explicit with who can help; under 60 seconds (~130 words); specific (names of systems, tickets, people).'
+    : `This is a job interview answer for a data/tech role. Framework expected: ${framework === 'star' ? 'STAR (Situation, Task, Action, Result with a measurable outcome; uses "I" for actions)' : framework === 'tech' ? 'Clarify assumptions, explain approach, discuss trade-offs, wrap up with a recommendation' : 'Present role, past trajectory, why this role; about 90 seconds'}.`;
+  const prompt = `You are an English coach for Brazilian tech and data professionals (B1 level), preparing them for meetings and job interviews.
+${rubric}
+${question ? `Question: "${question}"` : ''}
+Learner's answer (may come from speech recognition, ignore missing punctuation and capitalization):
+"""${answer}"""
+
+Respond ONLY with JSON, no prose, in exactly this shape:
+{"structure": 0-5, "clarity": 0-5, "grammar": 0-5,
+ "parts": {${kind === 'daily' ? '"yesterday": bool, "today": bool, "blockers": bool' : framework === 'star' ? '"situation": bool, "task": bool, "action": bool, "result": bool' : framework === 'tech' ? '"clarify": bool, "approach": bool, "tradeoffs": bool, "wrapup": bool' : '"present": bool, "past": bool, "why": bool'}},
+ "corrections": [{"original": "exact excerpt from the answer", "better": "corrected excerpt", "why_pt": "explicação curta em português"}],
+ "improved": "a natural, improved version of the whole answer, same content, B1-B2 English, speakable",
+ "chunks": ["3 to 5 useful English expressions from the improved version"],
+ "follow_up": ${kind === 'daily' ? 'null' : '"one realistic follow-up question an interviewer would ask next"'},
+ "tip_pt": "uma dica principal em português, direta, 1-2 frases"}
+At most 5 corrections, the most important ones. If the answer is already good, say so in tip_pt and keep corrections short.`;
+  return sample.json(prompt, { modelTier: 'default', cache: false });
+}
+
+function renderFeedback(el, fb, kind, framework) {
+  const n = (v) => Math.max(0, Math.min(5, Number(v) || 0));
+  const labels = {
+    yesterday: 'Yesterday', today: 'Today', blockers: 'Blockers',
+    situation: 'S · Situation', task: 'T · Task', action: 'A · Action', result: 'R · Result',
+    clarify: 'Clarify', approach: 'Approach', tradeoffs: 'Trade-offs', wrapup: 'Wrap up',
+    present: 'Presente', past: 'Trajetória', why: 'Por que aqui',
+  };
+  const parts = fb.parts && typeof fb.parts === 'object' ? Object.entries(fb.parts) : [];
+  const corr = Array.isArray(fb.corrections) ? fb.corrections.slice(0, 5) : [];
+  const chunks = Array.isArray(fb.chunks) ? fb.chunks.slice(0, 5) : [];
+  el.innerHTML = `
+    <div class="fb">
+      <div class="scores">
+        ${[['Estrutura', fb.structure], ['Clareza', fb.clarity], ['Gramática', fb.grammar]].map(([l, v]) => `
+          <div class="score"><span class="label">${l}</span><div class="v">${n(v)}<span style="font-size:15px;color:var(--ink-3)">/5</span></div><div class="bar"><span style="width:${n(v) * 20}%"></span></div></div>`).join('')}
+      </div>
+      ${parts.length ? `<div class="star-row">${parts.map(([k, ok]) => `<div class="star-cell ${ok ? 'ok' : 'miss'}"><b>${esc(labels[k] || k)}</b>${ok ? 'presente' : 'faltou'}</div>`).join('')}</div>` : ''}
+      ${fb.tip_pt ? `<p class="note"><b>Dica:</b> ${esc(fb.tip_pt)}</p>` : ''}
+      ${corr.length ? `<div class="stack" style="gap:10px"><span class="label">Correções</span>${corr.map((c) => `
+        <div class="fix" lang="en"><s>${esc(c.original)}</s> → <ins>${esc(c.better)}</ins><small lang="pt-BR">${esc(c.why_pt)}</small></div>`).join('')}</div>` : ''}
+      ${fb.improved ? `<div class="better"><div class="field-head"><span class="label">Versão melhorada</span><button class="icon-btn" type="button" data-say-improved aria-label="Ouvir versão melhorada">${SPEAKER}</button></div><p lang="en" style="margin:6px 0 0">${esc(fb.improved)}</p></div>` : ''}
+      ${chunks.length ? `<div><span class="label">Expressões para guardar</span><div class="chips" style="margin-top:6px">${chunks.map((c) => `<button class="chip" type="button" data-say="${esc(c)}" lang="en">▶ ${esc(c)}</button>`).join('')}</div></div>` : ''}
+      ${fb.follow_up ? `<div class="panel" style="background:var(--cobalt-soft);border-color:transparent"><span class="label">Follow-up do entrevistador</span><p class="question" style="font-size:19px;margin:6px 0 10px" lang="en">${esc(fb.follow_up)}</p><button class="btn" type="button" data-followup>Responder este follow-up</button></div>` : ''}
+    </div>`;
+  const imp = el.querySelector('[data-say-improved]');
+  if (imp) imp.addEventListener('click', () => say(fb.improved, { btn: imp }));
+  el.querySelectorAll('[data-say]').forEach((b) => b.addEventListener('click', () => say(b.dataset.say)));
+  const fu = el.querySelector('[data-followup]');
+  if (fu) fu.addEventListener('click', () => startFollowUp(fb.follow_up, framework));
+}
+
+function offlineCheck(el, kind, framework) {
+  const items = kind === 'daily'
+    ? ['Usei passado em "yesterday" (worked, fixed, finished)?', 'Usei "going to" ou "will" em "today"?', 'Disse o bloqueio e quem pode ajudar?', 'Falei em menos de 60 segundos?']
+    : (FRAMEWORKS[framework] || []).map(([k, l]) => `Minha resposta tem ${k} (${l})?`);
+  el.innerHTML = `<div class="note"><b>Correção automática indisponível nesta visualização.</b> Use o checklist e compare com a estrutura-modelo:<ul class="outline">${items.map((i) => `<li>${esc(i)}</li>`).join('')}</ul></div>`;
+}
+
+async function runFeedback({ el, btn, kind, question, answer, framework, onDone }) {
+  if (words(answer) < 8) { el.innerHTML = '<p class="note">Escreva ou grave pelo menos uma frase completa (8+ palavras) para receber correção.</p>'; return; }
+  if (!sample) { offlineCheck(el, kind, framework); return; }
+  btn.disabled = true;
+  const label = btn.textContent;
+  btn.innerHTML = '<span class="spinner" aria-hidden="true"></span> Corrigindo…';
+  el.innerHTML = '';
+  try {
+    const fb = await askFeedback({ kind, question, answer, framework });
+    renderFeedback(el, fb, kind, framework);
+    onDone && onDone(fb);
+  } catch (err) {
+    const code = err && err.code;
+    if (code === 'not_granted') { sample = null; offlineCheck(el, kind, framework); }
+    else if (code === 'rate_limited') el.innerHTML = '<p class="note">Muitas correções seguidas. Espere um minuto e tente de novo.</p>';
+    else el.innerHTML = '<p class="note">A correção não respondeu agora. Tente de novo em instantes.</p>';
+  } finally {
+    btn.disabled = false;
+    btn.textContent = label;
+  }
+}
+
+/* ======================= DAILY ======================= */
+const STARTERS = {
+  'd-y': ['Yesterday I worked on…', 'I finished…', 'I fixed a bug in…', 'I had a meeting with…', 'I reviewed…'],
+  'd-t': ["Today I'm going to…", "I'll focus on…", 'I plan to…', "I'm pairing with…"],
+  'd-b': ['No blockers on my side.', "I'm blocked on…", "I'm waiting on … from …", 'Could you help me with…?'],
+};
+document.querySelectorAll('.starters').forEach((box) => {
+  const id = box.dataset.for;
+  box.innerHTML = STARTERS[id].map((s) => `<button class="starter" type="button" lang="en">${esc(s)}</button>`).join('');
+  box.addEventListener('click', (e) => {
+    const b = e.target.closest('.starter'); if (!b) return;
+    const ta = document.getElementById(id);
+    const t = b.textContent.replace(/…$/, ' ');
+    ta.value = (ta.value.trim() ? ta.value.trim() + ' ' : '') + t;
+    ta.focus(); ta.setSelectionRange(ta.value.length, ta.value.length);
+    updateDaily();
+  });
+});
+const dailyText = () => ['d-y', 'd-t', 'd-b'].map((id) => document.getElementById(id).value.trim()).filter(Boolean).join(' ');
+function updateDaily() {
+  const t = dailyText();
+  document.getElementById('d-script').textContent = t ? `Hi everyone. ${t} That's it from me.` : 'Preencha os três blocos ao lado.';
+  const w = words(t) + 6;
+  const secs = Math.round((w / 130) * 60);
+  document.getElementById('d-meter').innerHTML = `<span><b>${w}</b> palavras</span><span class="${secs > 60 ? 'warn' : ''}">≈ <b>${secs}s</b> falando ${secs > 60 ? '· corte um pouco' : ''}</span>`;
+  store.set('daily', ['d-y', 'd-t', 'd-b'].map((id) => document.getElementById(id).value));
+}
+const savedDaily = store.get('daily', null);
+if (savedDaily) ['d-y', 'd-t', 'd-b'].forEach((id, i) => { if (savedDaily[i] != null) document.getElementById(id).value = savedDaily[i]; });
+['d-y', 'd-t', 'd-b'].forEach((id) => document.getElementById(id).addEventListener('input', updateDaily));
+updateDaily();
+document.getElementById('d-play').addEventListener('click', (e) => say(document.getElementById('d-script').textContent, { btn: e.currentTarget }));
+document.getElementById('d-play-slow').addEventListener('click', (e) => say(document.getElementById('d-script').textContent, { rate: 0.75, btn: e.currentTarget }));
+document.getElementById('d-copy').addEventListener('click', (e) => {
+  const b = e.currentTarget; const t = document.getElementById('d-script').textContent;
+  const done = () => { b.textContent = 'Copiado'; setTimeout(() => (b.textContent = 'Copiar'), 1500); };
+  try { navigator.clipboard.writeText(t).then(done, () => selectText('d-script')); } catch { selectText('d-script'); }
+});
+function selectText(id) { const r = document.createRange(); r.selectNodeContents(document.getElementById(id)); const s = getSelection(); s.removeAllRanges(); s.addRange(r); }
+document.getElementById('d-fb').addEventListener('click', (e) => {
+  const mine = document.getElementById('d-mine').value;
+  runFeedback({ el: document.getElementById('d-out'), btn: e.currentTarget, kind: 'daily', answer: mine || dailyText(), framework: 'daily' });
+});
+
+/* ======================= ENTREVISTA ======================= */
+const CATS = [['all', 'Todas'], ['pitch', 'Pitch'], ['behavioral', 'Comportamental'], ['technical', 'Técnica de dados'], ['closing', 'Fechamento']];
+const CAT_PT = { pitch: 'Pitch', behavioral: 'Comportamental', technical: 'Técnica de dados', closing: 'Fechamento' };
+let qCat = 'all';
+let current = { ...QUESTIONS[0] };
+let timerId = null, timeLeft = 120;
+const answered = new Set(store.get('answered', []));
+
+function renderQFilter() {
+  document.getElementById('q-filter').innerHTML = CATS.map(([k, l]) => `<button class="chip" type="button" aria-pressed="${qCat === k}" data-cat="${k}">${l}</button>`).join('');
+}
+document.getElementById('q-filter').addEventListener('click', (e) => { const b = e.target.closest('[data-cat]'); if (!b) return; qCat = b.dataset.cat; renderQFilter(); renderQList(); });
+function renderQList() {
+  const list = QUESTIONS.filter((q) => qCat === 'all' || q.cat === qCat);
+  document.getElementById('q-list').innerHTML = list.map((q) => `
+    <button class="q-item" role="listitem" type="button" data-q="${q.id}" aria-current="${current.id === q.id}">
+      <small>${CAT_PT[q.cat]}${answered.has(q.id) ? ' · <span class="done">✓ praticada</span>' : ''}</small>
+      <span lang="en">${esc(q.en)}</span>
+    </button>`).join('');
+}
+document.getElementById('q-list').addEventListener('click', (e) => {
+  const b = e.target.closest('[data-q]'); if (!b) return;
+  current = { ...QUESTIONS.find((q) => q.id === b.dataset.q) };
+  renderQList(); renderQPanel();
+  if (matchMedia('(max-width: 860px)').matches) document.getElementById('q-panel').scrollIntoView({ behavior: 'smooth', block: 'start' });
+});
+
+function renderQPanel() {
+  stopTimer(); timeLeft = 120;
+  const fw = FRAMEWORKS[current.fw] || FRAMEWORKS.star;
+  const p = document.getElementById('q-panel');
+  p.innerHTML = `
+    <div class="field-head" style="align-items:flex-start">
+      <div style="min-width:0">
+        <span class="label">${current.followUp ? 'Follow-up' : CAT_PT[current.cat]}</span>
+        <p class="question" lang="en" style="margin:6px 0 4px">${esc(current.en)}</p>
+        ${current.pt ? `<p style="margin:0;color:var(--ink-2)">${esc(current.pt)}</p>` : ''}
+      </div>
+      <div style="display:flex;gap:6px">
+        <button class="icon-btn" type="button" id="q-say" aria-label="Ouvir pergunta">${SPEAKER}</button>
+        <button class="icon-btn" type="button" id="q-say-slow" aria-label="Ouvir devagar">${TURTLE}</button>
+      </div>
+    </div>
+    <div class="framework" aria-label="Estrutura recomendada">${fw.map(([k, l]) => `<div><b>${k}</b>${l}</div>`).join('')}</div>
+    ${current.outline ? `<details><summary>Ver estrutura-modelo da resposta</summary><ol class="outline">${current.outline.map((o) => `<li>${esc(o)}</li>`).join('')}</ol></details>` : ''}
+    <div class="field">
+      <div class="field-head">
+        <label for="q-ans">Sua resposta</label>
+        <div style="display:flex;align-items:center;gap:10px">
+          <span class="timer" id="q-timer" aria-label="Tempo restante">2:00</span>
+          <button class="btn mic-btn" type="button" data-target="q-ans" ${dictation ? '' : 'hidden'}>● Gravar</button>
+        </div>
+      </div>
+      <textarea id="q-ans" lang="en" style="min-height:150px" placeholder="${current.fw === 'star' ? 'The situation was…' : current.fw === 'tech' ? 'Before I start, can I ask a few clarifying questions?…' : "I'm a data engineer with…"}"></textarea>
+      <div class="live" data-live="q-ans" aria-live="polite"></div>
+      <div class="meter" id="q-meter"></div>
+    </div>
+    <div class="btn-row">
+      <button class="btn" type="button" id="q-start">Iniciar cronômetro</button>
+      <button class="btn btn-primary" type="button" id="q-fb">Corrigir resposta</button>
+    </div>
+    <div id="q-out" aria-live="polite"></div>`;
+  const ta = document.getElementById('q-ans');
+  const meter = () => { const w = words(ta.value); document.getElementById('q-meter').innerHTML = `<span><b>${w}</b> palavras</span><span>≈ <b>${Math.round((w / 130) * 60)}s</b> falando</span>`; };
+  ta.addEventListener('input', meter); meter();
+  document.getElementById('q-say').addEventListener('click', (e) => say(current.en, { voice: 'glassy', btn: e.currentTarget }));
+  document.getElementById('q-say-slow').addEventListener('click', (e) => say(current.en, { voice: 'glassy', rate: 0.75, btn: e.currentTarget }));
+  document.getElementById('q-start').addEventListener('click', toggleTimer);
+  document.getElementById('q-fb').addEventListener('click', (e) => {
+    stopTimer();
+    runFeedback({
+      el: document.getElementById('q-out'), btn: e.currentTarget, kind: 'interview', question: current.en, answer: ta.value, framework: current.fw,
+      onDone: () => { if (!current.followUp) { answered.add(current.id); store.set('answered', [...answered]); renderQList(); } },
+    });
+  });
+}
+function toggleTimer() {
+  const b = document.getElementById('q-start');
+  if (timerId) { stopTimer(); return; }
+  if (timeLeft <= 0) timeLeft = 120;
+  b.textContent = 'Pausar';
+  timerId = setInterval(() => {
+    timeLeft -= 1;
+    const t = document.getElementById('q-timer');
+    if (!t) return stopTimer();
+    t.textContent = `${Math.floor(Math.max(timeLeft, 0) / 60)}:${String(Math.max(timeLeft, 0) % 60).padStart(2, '0')}`;
+    t.classList.toggle('low', timeLeft <= 20);
+    if (timeLeft <= 0) stopTimer();
+  }, 1000);
+}
+function stopTimer() { clearInterval(timerId); timerId = null; const b = document.getElementById('q-start'); if (b) b.textContent = timeLeft <= 0 ? 'Recomeçar' : timeLeft < 120 ? 'Continuar cronômetro' : 'Iniciar cronômetro'; }
+function startFollowUp(text, fw) {
+  current = { id: current.id + '-fu', cat: current.cat, en: text, pt: '', fw, followUp: true, outline: null };
+  renderQList(); renderQPanel();
+  document.getElementById('q-panel').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  say(text, { voice: 'glassy' });
+}
+
+/* ======================= FRASES ======================= */
+let fMod = 'all';
+const MOD_SHORT = { m1: 'Daily', m2: 'Bloqueios', m3: 'Reunião', m4: 'Pipelines', m5: 'Métricas', m6: 'Pitch', m7: 'STAR', m8: 'Técnica' };
+function renderFFilter() {
+  document.getElementById('f-filter').innerHTML = [['all', 'Todas'], ...Object.entries(MOD_SHORT)].map(([k, l]) => `<button class="chip" type="button" aria-pressed="${fMod === k}" data-mod="${k}">${l}</button>`).join('');
+}
+function renderPhrases() {
+  const q = document.getElementById('f-search').value.trim().toLowerCase();
+  const rows = PHRASES.filter(([m, en, pt]) => (fMod === 'all' || m === fMod) && (!q || en.toLowerCase().includes(q) || pt.toLowerCase().includes(q)));
+  document.getElementById('f-body').innerHTML = rows.length ? rows.map(([m, en, pt], i) => `
+    <tr>
+      <td><div class="en" lang="en">${esc(en)}</div><div class="pt">${esc(pt)}</div></td>
+      <td class="mod">${MOD_SHORT[m]}</td>
+      <td><button class="icon-btn" type="button" data-p="${esc(en)}" aria-label="Ouvir: ${esc(en)}">${SPEAKER}</button>
+          <button class="icon-btn" type="button" data-p="${esc(en)}" data-slow="1" aria-label="Ouvir devagar">${TURTLE}</button></td>
+    </tr>`).join('') : '<tr><td colspan="3" style="color:var(--ink-3)">Nenhuma expressão encontrada. Tente outra palavra.</td></tr>';
+}
+document.getElementById('f-filter').addEventListener('click', (e) => { const b = e.target.closest('[data-mod]'); if (!b) return; fMod = b.dataset.mod; renderFFilter(); renderPhrases(); });
+document.getElementById('f-search').addEventListener('input', renderPhrases);
+document.getElementById('f-body').addEventListener('click', (e) => { const b = e.target.closest('[data-p]'); if (b) say(b.dataset.p, { rate: b.dataset.slow ? 0.75 : 1, btn: b }); });
+
+/* ======================= PRONÚNCIA ======================= */
+document.getElementById('w-grid').innerHTML = WORDS.map(([w, ipa, no, yes], i) => `
+  <article class="word">
+    <div class="word-top">
+      <h3 lang="en">${esc(w)}</h3>
+      <div style="display:flex;gap:6px">
+        <button class="icon-btn" type="button" data-w="${esc(w)}" aria-label="Ouvir ${esc(w)}">${SPEAKER}</button>
+        <button class="icon-btn mic-test" type="button" data-test="${i}" aria-label="Testar minha pronúncia de ${esc(w)}" hidden>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3" fill="currentColor"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>
+        </button>
+      </div>
+    </div>
+    <div class="ipa">${esc(ipa)}</div>
+    <div class="trap">Evite <span class="no">${esc(no)}</span> · diga <span class="yes">${esc(yes)}</span></div>
+    <div class="test-res" id="tr-${i}" aria-live="polite"></div>
+  </article>`).join('');
+document.getElementById('w-grid').addEventListener('click', (e) => {
+  const b = e.target.closest('[data-w]');
+  if (b) { say(`${b.dataset.w}. ${b.dataset.w}.`, { rate: 0.85, btn: b }); return; }
+  const t = e.target.closest('[data-test]');
+  if (!t || !dictation) return;
+  const i = Number(t.dataset.test);
+  const target = WORDS[i][0].toLowerCase();
+  const out = document.getElementById('tr-' + i);
+  let heard = '';
+  out.textContent = 'Ouvindo… fale a palavra';
+  const offF = dictation.onFinal(({ text }) => { heard += ' ' + text; });
+  const offS = dictation.onState(({ state }) => {
+    if (state !== 'idle') return;
+    offF(); offS();
+    const h = heard.trim().toLowerCase();
+    const ok = h.replace(/[^a-z ]/g, '').split(' ').some((x) => x === target.replace(/[^a-z]/g, '')) || (target === 'sql' && /sequel|s q l/.test(h));
+    out.innerHTML = h ? (ok ? `<span style="color:var(--mint)">✓ Entendido: "${esc(h)}"</span>` : `<span style="color:var(--coral)">Ouvi "${esc(h)}". Tente de novo, mais devagar.</span>`) : 'Não ouvi nada. Tente de novo.';
+  });
+  dictation.start({ language: 'en' }).then(() => setTimeout(() => dictation.stop().catch(() => {}), 2600)).catch(() => { offF(); offS(); out.textContent = 'Microfone indisponível.'; });
+});
+cap('dictation').then((d) => { if (d) document.querySelectorAll('.mic-test').forEach((b) => (b.hidden = false)); });
+
+/* ======================= PLANO ======================= */
+document.getElementById('p-track').innerHTML = MODULES.map((m, i) => `
+  <div class="mod-row ${i === 0 ? 'focus' : ''}">
+    <div class="wk">${m.wk}<br>${i < 3 ? 'reunião' : i < 5 ? 'trabalho' : 'entrevista'}</div>
+    <div class="mod-body">
+      <h3>${esc(m.title)}</h3>
+      <p>${esc(m.desc)}</p>
+      <div class="can"><b>CONSIGO</b> ${esc(m.can)}</div>
+    </div>
+  </div>`).join('');
+
+/* ======================= INÍCIO ======================= */
+renderQFilter(); renderQList(); renderQPanel();
+renderFFilter(); renderPhrases();
+route();
+</script>
