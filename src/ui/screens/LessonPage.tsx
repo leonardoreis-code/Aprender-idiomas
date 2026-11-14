@@ -21,7 +21,7 @@ export function LessonPage({ lesson, hasVideo, go }: { lesson: SpeakingLesson; h
     { key: 'video', done: !!p.video, label: 'Vídeo-aula', sub: hasVideo ? 'A Maya explica em 3 min' : 'Em breve para esta aula', action: hasVideo ? () => go({ name: 'video', id: hasVideo }) : undefined },
     { key: 'article', done: !!p.article, label: 'Material escrito', sub: 'Leia abaixo e ouça os exemplos', action: () => document.getElementById('article')?.scrollIntoView({ behavior: 'smooth' }) },
     { key: 'practice', done: !!p.practice, label: 'Pense em inglês', sub: `${lesson.drills.length} frases do português para o inglês`, action: () => go({ name: 'practice', lessonId: lesson.id }) },
-    { key: 'teacher', done: !!p.teacher, label: 'Fale com a Maya', sub: 'Use o padrão numa conversa real', action: () => go({ name: 'teacher', lessonId: lesson.id }) },
+    { key: 'teacher', done: !!p.teacher, label: 'Treinador ao vivo', sub: 'Use o padrão falando, com correção na hora', action: () => go({ name: 'teacher', lessonId: lesson.id }) },
   ];
   return (
     <main className="shell lesson-page" id="main">

@@ -93,4 +93,26 @@ Critério de corte: entra primeiro o que **mede** a fala ou **aumenta minutos fa
 | 65 | App instalável e offline | 🗺️ P2 |
 | 66 | Teste A/B de exercícios usando o índice de fala como desfecho | 🗺️ P2 |
 
-**Totais:** 66 melhorias · ✅ 33 implementadas nesta rodada · 🗺️ 33 planejadas.
+## G. Metodologias novas e correção em tempo real (rodada seguinte)
+| # | Melhoria | Status |
+|---|---|---|
+| 67 | Treinador ao vivo: transcrição palavra a palavra enquanto você fala | ✅ |
+| 68 | Detector de erros em fala livre com 55 regras de interferência do português, no próprio navegador | ✅ |
+| 69 | Erro sublinhado em tempo real, durante a fala (pode ser desligado) | ✅ |
+| 70 | Feedback graduado em 4 degraus: aviso → onde → pista → modelo | ✅ |
+| 71 | Ajuda inicial que diminui quando você já consertou aquele erro com menos ajuda | ✅ |
+| 72 | Métrica de autocorreção (% de erros consertados sem ver a resposta) no gráfico semanal | ✅ |
+| 73 | Conversa livre conduzida pelo Claude, com erros além das regras e "jeito mais natural" — artefato | ✅ |
+| 74 | Fluência 60·45·30 (técnica 4/3/2 em versão curta) | ✅ |
+| 75 | Reconto: ouvir uma história e recontar, com ideias cobertas e erros marcados | ✅ |
+| 76 | Eco com atraso: repetir a frase 3 s depois de ouvir, com tamanho adaptativo | ✅ |
+| 77 | Tela "Falar" reunindo os 7 treinos de fala | ✅ |
+| 78 | Treinador a partir da aula, com perguntas de transformação (negativa, pergunta, 3ª pessoa, passado) | ✅ |
+| 79 | Frases corrigidas com modelo vão para o caderno | ✅ |
+| 80 | "Tente antes": 3 frases antes da explicação da aula (efeito do pré-teste) | 🗺️ P1 |
+| 81 | Conversa livre com IA também no modo servidor (API do Claude no backend) | 🗺️ P1 |
+| 82 | Treinador sem tocar no microfone (escuta contínua com detecção de turno) | 🗺️ P1 |
+| 83 | Regras do detector calibradas com as suas transcrições reais (taxa de falso positivo) | 🗺️ P1 |
+| 84 | Descrever uma palavra sem dizê-la (circunlóquio), para quando o vocabulário faltar | 🗺️ P2 |
+
+**Totais:** 84 melhorias · ✅ 46 implementadas · 🗺️ 38 planejadas.

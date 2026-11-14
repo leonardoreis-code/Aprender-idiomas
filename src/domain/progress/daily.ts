@@ -25,17 +25,20 @@ export interface DayStats {
   wpmN: number;
   /** Frases no degrau ≥ Falar ao fim do dia (foto, não soma). */
   auto: number;
+  /** Treinador ao vivo: erros trabalhados e quantos você consertou SEM ver a resposta. */
+  repN: number;
+  repSelf: number;
 }
 
 export type Daily = Record<string, DayStats>;
 
-export const emptyDay = (): DayStats => ({ spokenSec: 0, spoken: 0, produced: 0, correct: 0, due: 0, dueOk: 0, spwSum: 0, spwN: 0, mayaSec: 0, wpmSum: 0, wpmN: 0, auto: 0 });
+export const emptyDay = (): DayStats => ({ spokenSec: 0, spoken: 0, produced: 0, correct: 0, due: 0, dueOk: 0, spwSum: 0, spwN: 0, mayaSec: 0, wpmSum: 0, wpmN: 0, auto: 0, repN: 0, repSelf: 0 });
 
 export function addDay(daily: Daily, day: string, patch: Partial<DayStats>): Daily {
   const cur = daily[day] ?? emptyDay();
   const next = { ...cur };
   for (const [k, v] of Object.entries(patch) as [keyof DayStats, number][]) {
-    next[k] = k === 'auto' ? v : cur[k] + v;
+    next[k] = k === 'auto' ? v : (cur[k] ?? 0) + v;
   }
   return { ...daily, [day]: next };
 }
@@ -52,6 +55,8 @@ export interface WeekSummary {
   secPerWord: number | null;
   wpm: number | null;
   auto: number | null;
+  /** % dos erros consertados sem ver a resposta; null sem dados. */
+  selfRepair: number | null;
   activeDays: number;
 }
 
@@ -67,7 +72,7 @@ export function weekly(daily: Daily, today: string, weeks = 8): WeekSummary[] {
       const s = daily[addDays(start, d)];
       if (!s) continue;
       if (s.spokenSec || s.produced || s.mayaSec) active++;
-      for (const k of Object.keys(acc) as (keyof DayStats)[]) if (k !== 'auto') acc[k] += s[k];
+      for (const k of Object.keys(acc) as (keyof DayStats)[]) if (k !== 'auto') acc[k] += s[k] ?? 0;
       auto = s.auto;
     }
     out.push({
@@ -80,6 +85,7 @@ export function weekly(daily: Daily, today: string, weeks = 8): WeekSummary[] {
       secPerWord: acc.spwN >= 3 ? Math.round((acc.spwSum / acc.spwN) * 100) / 100 : null,
       wpm: acc.wpmN ? Math.round(acc.wpmSum / acc.wpmN) : null,
       auto,
+      selfRepair: acc.repN >= 3 ? Math.round((acc.repSelf / acc.repN) * 100) : null,
       activeDays: active,
     });
   }

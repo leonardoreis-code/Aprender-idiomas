@@ -19,9 +19,13 @@ export type Route =
   | { name: 'evolution' }
   | { name: 'checkpoint' }
   | { name: 'monologue' }
-  | { name: 'mine' };
+  | { name: 'mine' }
+  | { name: 'lab' }
+  | { name: 'fluency' }
+  | { name: 'retell' }
+  | { name: 'echo' };
 
-const MODES = ['conversation', 'drill', 'roleplay', 'interview'];
+const MODES = ['conversation', 'drill', 'roleplay', 'interview', 'call'];
 
 export function parse(hash: string): Route {
   const [a, ...args] = hash.replace(/^#\/?/, '').replace(/\//g, '--').split('--');
@@ -46,6 +50,10 @@ export function parse(hash: string): Route {
     case 'checkpoint': return { name: 'checkpoint' };
     case 'fala-livre': return { name: 'monologue' };
     case 'minhas-frases': return { name: 'mine' };
+    case 'falar': return { name: 'lab' };
+    case 'fluencia': return { name: 'fluency' };
+    case 'reconto': return { name: 'retell' };
+    case 'eco': return { name: 'echo' };
     default: return { name: 'home' };
   }
 }
@@ -68,5 +76,9 @@ export function toHash(r: Route): string {
     case 'checkpoint': return '#checkpoint';
     case 'monologue': return '#fala-livre';
     case 'mine': return '#minhas-frases';
+    case 'lab': return '#falar';
+    case 'fluency': return '#fluencia';
+    case 'retell': return '#reconto';
+    case 'echo': return '#eco';
   }
 }

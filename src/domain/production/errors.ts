@@ -22,6 +22,12 @@ export const ERROR_CATEGORIES: Record<string, ErrorCategory> = {
   'preposition': { id: 'preposition', title: 'Preposições', explain: 'in / on / at / to / for não batem 1-para-1 com o português.' },
   'there-is': { id: 'there-is', title: '"Tem" = there is', explain: '"Tem um bug" = "There is a bug", não "Have a bug".' },
   'missing-word': { id: 'missing-word', title: 'Palavra faltando', explain: 'Faltou uma parte da frase.' },
+  'be-have': { id: 'be-have', title: '"Ter" que vira "be"', explain: 'Idade, fome, medo e sono usam to be: "I am 30", "I am hungry".' },
+  'verb-pattern': { id: 'verb-pattern', title: 'Forma do verbo', explain: 'O verbo que vem depois de to, de modais, de am/is/are e de verbos como enjoy tem forma fixa.' },
+  'agreement': { id: 'agreement', title: 'Concordância', explain: 'People are, we were, she doesn\'t; uma negação só por frase.' },
+  'collocation': { id: 'collocation', title: 'Combinação de palavras', explain: 'Ask a question, make a mistake, take a course, have lunch.' },
+  'false-friend': { id: 'false-friend', title: 'Falso cognato', explain: 'Pretend = fingir, assist = ajudar, realize = perceber.' },
+  'uncountable': { id: 'uncountable', title: 'Contáveis e incontáveis', explain: 'Information e advice não têm plural; many para contáveis, much para incontáveis.' },
   'vocabulary': { id: 'vocabulary', title: 'Vocabulário', explain: 'Palavra diferente da esperada. Veja a forma natural.' },
 };
 

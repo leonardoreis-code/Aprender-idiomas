@@ -60,7 +60,7 @@ export function Evolution({ go }: { go: (r: Route) => void }) {
             <p className="muted" style={{ marginTop: 4 }}>{phase.focus}</p>
             <div className="plan-goals">
               <Goal label="Minutos falando nesta semana" value={wk.speakMin} target={phase.speakMin} unit="min" />
-              <Goal label="Conversa com a Maya nesta semana" value={wk.mayaMin} target={phase.mayaMin} unit="min" />
+              <Goal label="Conversa (treinador ou Maya) nesta semana" value={wk.mayaMin} target={phase.mayaMin} unit="min" />
               <Goal label="Frases automáticas (degrau Falar ou acima)" value={auto} target={autoTarget(Math.min(week, PLAN_WEEKS))} unit="" />
               <Goal label="Dias ativos nesta semana" value={wk.activeDays} target={6} unit="" />
             </div>
@@ -133,13 +133,18 @@ export function Evolution({ go }: { go: (r: Route) => void }) {
         <div className="chart-grid">
           <div>
             <h3>Minutos falando por semana</h3>
-            <StackedBars title="Minutos falando por semana" unit=" min" names={['Frases e fala livre', 'Conversa com a Maya']} target={start ? phase.speakMin + phase.mayaMin : undefined}
+            <StackedBars title="Minutos falando por semana" unit=" min" names={['Frases e fala livre', 'Treinador e Maya']} target={start ? phase.speakMin + phase.mayaMin : undefined}
               data={weeks.map((w) => ({ label: w.label, a: w.speakMin, b: w.mayaMin }))} />
           </div>
           <div>
             <h3>Retenção real (%)</h3>
             <LineChart title="Retenção" unit="%" points={weeks.map((w) => ({ label: w.label, value: w.retention }))} yMin={0} yMax={100} lowerIsBetter={false} />
             <p className="fine">Frases vencidas que saíram certas na primeira tentativa. A meta é ficar perto de 85–90%.</p>
+          </div>
+          <div>
+            <h3>Autocorreção (%)</h3>
+            <LineChart title="Autocorreção" unit="%" points={weeks.map((w) => ({ label: w.label, value: w.selfRepair }))} yMin={0} yMax={100} lowerIsBetter={false} />
+            <p className="fine">Erros apontados pelo treinador que você consertou sem ver a resposta. Subir aqui significa precisar de menos ajuda para o mesmo erro.</p>
           </div>
           <div>
             <h3>Segundos por palavra nas frases faladas</h3>
@@ -153,8 +158,8 @@ export function Evolution({ go }: { go: (r: Route) => void }) {
         </div>
         <DataTable
           summary="Ver semanas como tabela"
-          head={['Semana de', 'Min falando', 'Min com a Maya', 'Frases faladas', 'Retenção', 's/palavra', 'Palavras/min', 'Dias ativos']}
-          rows={weeks.map((w) => [w.label, w.speakMin, w.mayaMin, w.spoken, w.retention === null ? '—' : `${w.retention}%`, w.secPerWord ?? '—', w.wpm ?? '—', w.activeDays])}
+          head={['Semana de', 'Min falando', 'Min de conversa', 'Frases faladas', 'Retenção', 'Autocorreção', 's/palavra', 'Palavras/min', 'Dias ativos']}
+          rows={weeks.map((w) => [w.label, w.speakMin, w.mayaMin, w.spoken, w.retention === null ? '—' : `${w.retention}%`, w.selfRepair === null ? '—' : `${w.selfRepair}%`, w.secPerWord ?? '—', w.wpm ?? '—', w.activeDays])}
         />
       </section>
 

@@ -47,6 +47,11 @@ export const ERROR_LESSONS: Record<string, string[]> = {
   preposition: ['fala-09'],
   article: ['zero-02'],
   vocabulary: ['fala-08', 'fala-11'],
+  collocation: ['fala-08'],
+  'false-friend': ['fala-11'],
+  'verb-pattern': ['fala-07', 'fala-04'],
+  agreement: ['fala-02'],
+  'be-have': ['zero-01'],
 };
 
 /** Frases das aulas ligadas às categorias de erro mais frequentes do aluno. */

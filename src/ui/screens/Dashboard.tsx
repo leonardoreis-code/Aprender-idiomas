@@ -42,7 +42,7 @@ export function Dashboard({ go }: { go: (r: Route) => void }) {
       ? { label: `Aula: ${next.title}`, sub: 'Vídeo, leitura e prática na escada', done: d.produced >= 12, go: { name: 'lesson', id: next.id } }
       : { label: 'Treino dos meus erros', sub: 'Frases das estruturas em que você mais erra', done: d.produced >= 12, go: { name: 'practice', lessonId: 'erros' } },
     { label: 'Fala livre de 1 minuto', sub: d.wpmN ? `${Math.round(d.wpmSum / d.wpmN)} palavras por minuto hoje` : 'Fale sem parar sobre a pergunta do dia', done: d.wpmN > 0, go: { name: 'monologue' } },
-    { label: `Conversa com a Maya (${mayaTarget} min)`, sub: `${Math.round(d.mayaSec / 60)} min hoje`, done: d.mayaSec >= mayaTarget * 60, go: { name: 'teacher' } },
+    { label: `Treinador ao vivo (${mayaTarget} min)`, sub: `${Math.round(d.mayaSec / 60)} min hoje`, done: d.mayaSec >= mayaTarget * 60, go: { name: 'teacher' } },
   ];
   const doneSteps = steps.filter((s) => s.done).length;
 
@@ -110,9 +110,9 @@ export function Dashboard({ go }: { go: (r: Route) => void }) {
         <button className="tile tile-teacher" onClick={() => go({ name: 'teacher' })}>
           <TeacherAvatar state="idle" size={84} />
           <span>
-            <span className="ex-kicker">Aula ao vivo</span>
-            <strong className="tile-title">Conversar com a Maya</strong>
-            <span className="muted">Ela ouve, corrige sua gramática na hora e pede para você repetir.</span>
+            <span className="ex-kicker">Tempo real</span>
+            <strong className="tile-title">Treinador ao vivo</strong>
+            <span className="muted">O erro é marcado enquanto você fala, e você conserta a própria frase com ajuda em degraus.</span>
           </span>
         </button>
 
@@ -150,10 +150,10 @@ export function Dashboard({ go }: { go: (r: Route) => void }) {
           </button>
         )}
 
-        <button className="tile" onClick={() => go({ name: 'accent' })}>
-          <span className="ex-kicker">Laboratório de sotaque</span>
-          <strong className="tile-title">Onde sua pronúncia trava</strong>
-          <span className="muted">Grave, compare com a voz nativa e veja os padrões do português que aparecem na sua fala.</span>
+        <button className="tile" onClick={() => go({ name: 'lab' })}>
+          <span className="ex-kicker">Falar</span>
+          <strong className="tile-title">7 treinos de fala</strong>
+          <span className="muted">Fluência 60·45·30, reconto, eco com atraso, sotaque e mais.</span>
         </button>
 
         {dueBase > 0 && (

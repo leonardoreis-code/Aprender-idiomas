@@ -23,12 +23,15 @@ import { LessonPage } from './ui/screens/LessonPage';
 import { ProductionSession } from './ui/screens/ProductionSession';
 import { VideoPlayer } from './ui/screens/VideoPlayer';
 import { StoryPlayer } from './ui/screens/StoryPlayer';
-import { TeacherRoom, type TeacherModeId } from './ui/screens/TeacherRoom';
+import { TeacherRoom } from './ui/screens/TeacherRoom';
 import { AccentLab } from './ui/screens/AccentLab';
 import { Profile } from './ui/screens/Profile';
 import { CheckpointScreen } from './ui/screens/Checkpoint';
 import { Evolution } from './ui/screens/Evolution';
 import { Monologue, MySentences } from './ui/screens/Extras';
+import { LiveCoach } from './ui/screens/LiveCoach';
+import { DelayedEcho, Fluency, Lab, Retell } from './ui/screens/Methods';
+import { isArtifact } from './infra/platform';
 import { Logo } from './ui/icons/ui';
 import { NavIcon } from './ui/components/NavIcon';
 
@@ -59,7 +62,7 @@ function useRoute(): [Route, (r: Route) => void] {
 const NAV: { route: Route; label: string; icon: Parameters<typeof NavIcon>[0]['name'] }[] = [
   { route: { name: 'home' }, label: 'Início', icon: 'home' },
   { route: { name: 'course' }, label: 'Curso', icon: 'course' },
-  { route: { name: 'teacher' }, label: 'Maya', icon: 'teacher' },
+  { route: { name: 'lab' }, label: 'Falar', icon: 'teacher' },
   { route: { name: 'evolution' }, label: 'Evolução', icon: 'practice' },
   { route: { name: 'profile' }, label: 'Perfil', icon: 'profile' },
 ];
@@ -86,7 +89,7 @@ function Shell() {
   const screen = <Screen route={route} go={go} />;
   if (immersive) return <>{screen}<Toasts /></>;
 
-  const active = (r: Route) => r.name === route.name || (r.name === 'course' && ['lesson', 'video', 'stories', 'story', 'base'].includes(route.name)) || (r.name === 'home' && ['monologue', 'mine'].includes(route.name)) || (r.name === 'profile' && ['settings', 'accent'].includes(route.name));
+  const active = (r: Route) => r.name === route.name || (r.name === 'course' && ['lesson', 'video', 'stories', 'story', 'base'].includes(route.name)) || (r.name === 'lab' && ['teacher', 'fluency', 'retell', 'echo', 'monologue', 'mine', 'accent'].includes(route.name)) || (r.name === 'profile' && route.name === 'settings');
   return (
     <div className="app">
       <a href="#main" className="skip">Pular para o conteúdo</a>
@@ -132,18 +135,10 @@ function Screen({ route, go }: { route: Route; go: (r: Route) => void }) {
     }
     case 'teacher': {
       const l = route.lessonId ? findSpeakingLesson(route.lessonId) : undefined;
-      const ctx = l ? `Current lesson: "${l.title}". Target pattern: ${l.pattern.frame} (${l.pattern.meaning}). Practice this pattern. Opening question: ${l.speakingPrompt.en}` : '';
-      return (
-        <TeacherRoom
-          key={route.lessonId ?? 'free'}
-          onBack={() => {
-            if (l) store.set((s) => ({ ...s, lessons: { ...s.lessons, [l.id]: { ...s.lessons[l.id], teacher: true } } }));
-            l ? go({ name: 'lesson', id: l.id }) : go({ name: 'home' });
-          }}
-          initialMode={(route.mode as TeacherModeId) ?? (l ? 'drill' : 'conversation')}
-          lessonContext={ctx}
-        />
-      );
+      // ligação de voz contínua (ElevenLabs) só fora do artefato e só quando pedida
+      if (route.mode === 'call' && !isArtifact) return <TeacherRoom key="call" onBack={() => go({ name: 'lab' })} initialMode="conversation" />;
+      const scenarioId = { roleplay: 'daily', interview: 'interview', conversation: 'smalltalk' }[route.mode ?? ''];
+      return <LiveCoach key={`${route.lessonId ?? ''}-${route.mode ?? ''}`} go={go} lessonId={l?.id} scenarioId={scenarioId} />;
     }
     case 'accent':
       return <AccentLab onBack={() => history.back()} />;
@@ -173,6 +168,14 @@ function Screen({ route, go }: { route: Route; go: (r: Route) => void }) {
       return <Monologue go={go} />;
     case 'mine':
       return <MySentences go={go} />;
+    case 'lab':
+      return <Lab go={go} />;
+    case 'fluency':
+      return <Fluency go={go} />;
+    case 'retell':
+      return <Retell go={go} />;
+    case 'echo':
+      return <DelayedEcho go={go} />;
     default:
       return <Dashboard go={go} />;
   }

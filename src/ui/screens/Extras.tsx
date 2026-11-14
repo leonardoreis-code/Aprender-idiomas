@@ -10,7 +10,7 @@ import type { Route } from '../router';
 import { useStore } from '../store';
 
 /** Perguntas da fala livre diária: giram pelo dia do ano. */
-const PROMPTS: { en: string; pt: string }[] = [
+export const FREE_PROMPTS: { en: string; pt: string }[] = [
   { en: 'What did you do yesterday, from morning to night?', pt: 'O que você fez ontem, da manhã à noite?' },
   { en: 'What are you working on this week?', pt: 'No que você está trabalhando esta semana?' },
   { en: 'Describe the last meeting you attended.', pt: 'Descreva a última reunião de que você participou.' },
@@ -31,12 +31,12 @@ const PROMPTS: { en: string; pt: string }[] = [
 export function Monologue({ go }: { go: (r: Route) => void }) {
   const store = useStore();
   const doy = Math.floor((Date.now() - new Date(new Date().getFullYear(), 0, 0).getTime()) / 86_400_000);
-  const [k, setK] = useState(doy % PROMPTS.length);
+  const [k, setK] = useState(doy % FREE_PROMPTS.length);
   const [res, setRes] = useState<FreeResult | null>(null);
   const [fb, setFb] = useState<SpeechFeedback | null>(null);
   const [loading, setLoading] = useState(false);
   const [typed, setTyped] = useState('');
-  const p = PROMPTS[k];
+  const p = FREE_PROMPTS[k];
   const today = store.state.daily[dayKey()];
   const avg = today?.wpmN ? Math.round(today.wpmSum / today.wpmN) : null;
 
@@ -64,7 +64,7 @@ export function Monologue({ go }: { go: (r: Route) => void }) {
       <section className="card stack">
         <div className="row-between">
           <span className="ex-kicker">Pergunta de hoje</span>
-          <button className="link-btn" onClick={() => { setK((k + 1) % PROMPTS.length); setRes(null); setFb(null); }}>Trocar pergunta</button>
+          <button className="link-btn" onClick={() => { setK((k + 1) % FREE_PROMPTS.length); setRes(null); setFb(null); }}>Trocar pergunta</button>
         </div>
         <p className="pt-prompt" lang="en" style={{ margin: 0 }}>{p.en} <button className="icon-btn inline" onClick={() => speak(p.en)} aria-label="Ouvir a pergunta"><SpeakerIcon size={16} /></button></p>
         <p className="muted" style={{ margin: 0 }}>{p.pt}</p>

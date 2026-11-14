@@ -8,12 +8,12 @@ import { caps } from './platform';
 
 export const llmAvailable = () => !!caps.sample;
 
-async function askJson<T>(prompt: string): Promise<T | null> {
+async function askJson<T>(prompt: string, tier: 'quick' | 'default' = 'default'): Promise<T | null> {
   const s = caps.sample;
   if (!s) return null;
   try {
-    if (s.json) return (await s.json(prompt, { modelTier: 'default', cache: false })) as T;
-    const r = await s(prompt, { modelTier: 'default', cache: false });
+    if (s.json) return (await s.json(prompt, { modelTier: tier, cache: false })) as T;
+    const r = await s(prompt, { modelTier: tier, cache: false });
     const m = r.text.match(/[[{][\s\S]*[\]}]/);
     return m ? (JSON.parse(m[0]) as T) : null;
   } catch {
@@ -117,4 +117,59 @@ Respond ONLY with a JSON array, one object per sentence in the same order: [{"pt
     });
   });
   return out;
+}
+
+export interface CoachReply {
+  /** Erros além dos que as regras locais já acharam (no máximo 2). */
+  errors: { quote: string; fix: string; clue: string; explain: string; cat: string }[];
+  /** Jeito mais natural de dizer algo que estava correto mas "traduzido". */
+  upgrade: { from: string; to: string; why: string } | null;
+  /** Próxima fala do treinador: reação curta + uma pergunta. */
+  reply: string;
+}
+
+const CATS = ['missing-subject', 'do-support', 'third-person', 'past-tense', 'perfect', 'word-order', 'article', 'preposition', 'there-is', 'be-have', 'verb-pattern', 'agreement', 'collocation', 'false-friend', 'uncountable', 'vocabulary'];
+
+/** Um turno do treinador ao vivo com o Claude: corrige além das regras locais, ensina e continua a conversa. */
+export async function coachTurn(input: {
+  scenario: string;
+  level: string;
+  history: { role: 'coach' | 'student'; text: string }[];
+  utterance: string;
+  alreadyFound: string[];
+  focus?: string;
+}): Promise<CoachReply | null> {
+  const r = await askJson<{ errors?: unknown; upgrade?: unknown; reply?: unknown }>(
+    `You are a real-time English speaking coach for a Brazilian professional. Scenario: ${input.scenario}. Learner level: ${input.level}.${input.focus ? ` Target pattern of this session: ${input.focus}.` : ''}
+Conversation so far:
+${input.history.slice(-8).map((h) => `${h.role === 'coach' ? 'Coach' : 'Learner'}: ${h.text}`).join('\n')}
+Learner just said (speech recognition, ignore punctuation/capitalization): "${input.utterance}"
+A rule engine already flagged these excerpts, do NOT repeat them: ${input.alreadyFound.length ? input.alreadyFound.map((x) => `"${x}"`).join(', ') : '(none)'}
+
+Do three things:
+1. errors: up to 2 REAL grammar or word-choice errors that remain (not style, not pronunciation, not things already flagged). "quote" must be the exact excerpt from the learner. "clue_pt" is a hint in Portuguese that does NOT reveal the answer. "rule_pt" is the rule in one short Portuguese sentence. "cat" is one of: ${CATS.join(', ')}.
+2. upgrade: if something was correct but sounds translated from Portuguese, give ONE more natural way to say it ("from" exact excerpt, "to" natural version, "why_pt" one short Portuguese sentence). Otherwise null.
+3. reply: your next turn as the coach, in English: one short reaction to WHAT they said plus ONE question that keeps them talking. Max 2 sentences. No corrections inside the reply.
+Respond ONLY with JSON: {"errors":[{"quote":"","fix":"","clue_pt":"","rule_pt":"","cat":""}],"upgrade":{"from":"","to":"","why_pt":""} or null,"reply":""}`,
+    'quick',
+  );
+  if (!r || typeof r.reply !== 'string' || !r.reply.trim()) return null;
+  const low = input.utterance.toLowerCase();
+  const errors = (Array.isArray(r.errors) ? r.errors : [])
+    .map((e) => e as { quote?: unknown; fix?: unknown; clue_pt?: unknown; rule_pt?: unknown; cat?: unknown })
+    .filter((e) => typeof e.quote === 'string' && typeof e.fix === 'string' && e.quote.trim() && e.fix.trim() && e.quote.toLowerCase() !== (e.fix as string).toLowerCase() && low.includes((e.quote as string).toLowerCase().replace(/[.,!?]/g, '').trim()))
+    .slice(0, 2)
+    .map((e) => ({
+      quote: (e.quote as string).slice(0, 160),
+      fix: (e.fix as string).slice(0, 160),
+      clue: typeof e.clue_pt === 'string' ? e.clue_pt.slice(0, 200) : 'Tem um ajuste neste trecho.',
+      explain: typeof e.rule_pt === 'string' ? e.rule_pt.slice(0, 240) : '',
+      cat: typeof e.cat === 'string' && CATS.includes(e.cat) ? e.cat : 'vocabulary',
+    }));
+  const u = r.upgrade as { from?: unknown; to?: unknown; why_pt?: unknown } | null;
+  return {
+    errors,
+    upgrade: u && typeof u.from === 'string' && typeof u.to === 'string' && u.to.trim() ? { from: u.from.slice(0, 160), to: u.to.slice(0, 160), why: typeof u.why_pt === 'string' ? u.why_pt.slice(0, 200) : '' } : null,
+    reply: r.reply.trim().slice(0, 300),
+  };
 }

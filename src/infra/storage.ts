@@ -5,6 +5,7 @@ import type { QuestDay } from '../domain/motivation/quests';
 import type { CheckpointResult } from '../domain/assessment/checkpoint';
 import type { Daily } from '../domain/progress/daily';
 import type { Drill } from '../domain/curriculum/speaking';
+import type { RepairRecord } from '../domain/coach/mediation';
 
 export type LearnerLevel = 'zero' | 'fala' | 'avancado';
 export type Goal = 'trabalho' | 'entrevista' | 'viagem' | 'dia-a-dia';
@@ -68,6 +69,9 @@ export interface AppState {
   daily: Daily;
   /** Frases do próprio aluno ("Minhas frases"). */
   custom: Drill[];
+  /** Treinador ao vivo: histórico de consertos (degrau de ajuda necessário). */
+  repairs: RepairRecord[];
+  coach: { liveMarks: boolean; echoBest: number };
 }
 
 const KEY = 'fluente:v1';
@@ -97,6 +101,8 @@ export const defaultState = (): AppState => ({
   checkpoints: [],
   daily: {},
   custom: [],
+  repairs: [],
+  coach: { liveMarks: true, echoBest: 0 },
 });
 
 export function loadState(): AppState {
@@ -112,6 +118,7 @@ export function loadState(): AppState {
       settings: { ...base.settings, ...parsed.settings },
       profile: { ...base.profile, ...parsed.profile },
       plan: { ...base.plan, ...parsed.plan },
+      coach: { ...base.coach, ...parsed.coach },
       version: 1,
     };
   } catch {

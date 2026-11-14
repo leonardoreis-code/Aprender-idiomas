@@ -11,7 +11,7 @@ ELEVENLABS_API_KEY=sk_... npm start      # http://localhost:8787  (sem a chave t
 # desenvolvimento
 npm run dev:api   # backend na 8787
 npm run dev       # front com hot reload (proxy /api → 8787)
-npm test          # 61 testes (domínio + validação de todo o conteúdo)
+npm test          # 168 testes (domínio + validação de todo o conteúdo)
 ```
 
 ## Como o aprendizado é comprovado
@@ -20,6 +20,11 @@ npm test          # 61 testes (domínio + validação de todo o conteúdo)
 - **Evolução**: gráficos dos checkpoints e evidência semanal automática (minutos falando, retenção real, velocidade).
 - **Plano de 6 meses**: 26 semanas em 4 fases, com metas semanais de minutos falando. Ver [`docs/PLANO-6-MESES.md`](docs/PLANO-6-MESES.md)
   e as 66 melhorias em [`docs/MELHORIAS.md`](docs/MELHORIAS.md).
+
+## Treinador ao vivo e novas metodologias
+- **Treinador ao vivo**: o texto aparece enquanto você fala e o erro é sublinhado na hora por 55 regras que rodam no
+  navegador (sem servidor, sem ElevenLabs). Você conserta a própria frase com ajuda em 4 degraus.
+- **Fluência 60·45·30**, **Reconto** e **Eco com atraso**. Base científica e limites em [`docs/METODOLOGIAS.md`](docs/METODOLOGIAS.md).
 
 ## O que tem
 - **Pense em inglês**: cada frase sobe uma escada de 5 degraus (montar com blocos → bloco a bloco → escrever →
