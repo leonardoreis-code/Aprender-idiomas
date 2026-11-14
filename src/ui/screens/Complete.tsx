@@ -37,7 +37,9 @@ export function Complete({ summary, streak, goalJustMet, levelUp, achievements, 
   const xp = useCountUp(summary.xp);
   const accV = useCountUp(acc);
   const mins = Math.max(1, Math.round(summary.ms / 60000));
-  useEffect(() => sfxComplete(), []);
+  useEffect(() => {
+    sfxComplete();
+  }, []);
 
   const headline = acc === 100 ? 'Sem nenhum erro!' : acc >= 80 ? 'Lição concluída!' : 'Concluída — e o cérebro trabalhou!';
   return (

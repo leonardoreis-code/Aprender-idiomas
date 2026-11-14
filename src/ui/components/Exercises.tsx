@@ -316,7 +316,9 @@ export function WordBank({ ex, onResult, answered }: ExProps<'word-bank'>) {
 export function Dictation({ ex, onResult, answered, slow }: ExProps<'dictation'>) {
   const [value, setValue] = useState('');
   const ref = useRef<HTMLInputElement>(null);
-  useEffect(() => ref.current?.focus(), []);
+  useEffect(() => {
+    ref.current?.focus();
+  }, []);
   const check = () => {
     if (!value.trim() || answered) return;
     const v = checkTyped(value, ex.accepted);

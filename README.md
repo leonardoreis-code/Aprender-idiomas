@@ -1,61 +1,45 @@
-# Fluente — aprender inglês (e depois outros idiomas)
+# Fluente — destravar a fala em inglês
 
-App web para aprender idiomas em sessões curtas, fundamentado em evidência científica: repetição espaçada (FSRS),
-prática de recuperação, treino fonético de alta variabilidade, feedback corretivo imediato e gamificação gentil.
-Começa com **inglês A1 para falantes de português**.
+Plataforma para quem **entende inglês mas trava para falar** (e também para quem começa do zero).
+O centro de tudo é transformar português em inglês na hora, em voz alta, com uma professora de IA que corrige em tempo real.
 
 ```bash
 npm install
-npm run dev        # http://localhost:5173
-npm test           # testes de domínio (Vitest)
-npm run build      # gera dist/ (site estático, deploy em qualquer CDN)
+npm run build
+ELEVENLABS_API_KEY=sk_... npm start      # http://localhost:8787  (sem a chave também funciona, com voz do sistema)
+
+# desenvolvimento
+npm run dev:api   # backend na 8787
+npm run dev       # front com hot reload (proxy /api → 8787)
+npm test          # 46 testes (domínio + validação de todo o conteúdo)
 ```
 
 ## O que tem
-- **Trilha em mapa de metrô** — 4 unidades / 12 lições implementadas, 12 unidades planejadas.
-- **10 tipos de exercício**: apresentação com ilustração, escuta, tradução, pares, montar frase, lacuna, ditado,
-  fala com reconhecimento de voz, pares mínimos com vozes variadas, laboratório de pronúncia com diagrama da boca.
-- **Revisão espaçada FSRS** (`ts-fsrs`) com nota inferida do desempenho — você não precisa se autoavaliar.
-- **Pronúncia**: pontuação de inteligibilidade (0–100) palavra a palavra e dicas específicas para brasileiros.
-- **Motivação**: XP, combo com som que sobe de tom, meta diária, sequência com proteção automática, níveis, conquistas.
-- **Acessibilidade**: teclado completo (`1–4`, `Enter`, `Espaço`, `Esc`), leitores de tela, fonte Atkinson
-  Hyperlegible, escala de fonte, alto contraste, tema escuro, `prefers-reduced-motion`, fala sempre opcional.
+- **Pense em inglês**: cada frase sobe uma escada de 5 degraus (montar com blocos → bloco a bloco → escrever →
+  falar → relâmpago). Os blocos coloridos mostram a frase na ordem do inglês, para parar de traduzir palavra por palavra.
+  Repetição espaçada (FSRS) decide quando cada frase volta.
+- **Maya, professora ao vivo**: agente de voz da ElevenLabs com avatar animado. Corrige sua gramática na hora, pede
+  para repetir, faz roleplay de daily e entrevista técnica. Recebe do app seus erros recorrentes e seu nível.
+- **Laboratório de sotaque**: grava sua voz, compara com o que a máquina entendeu e aponta padrões do português
+  (TH, "i" no final, ship/sheep, -ed…). Com a chave, usa ElevenLabs Scribe.
+- **Curso**: 3 trilhas (Do zero · Destravar a fala · Inglês para tech) com 26 aulas, 312 frases, material escrito,
+  8 vídeo-aulas narradas pela professora e 10 histórias interativas, mais a trilha base A1 com mapa de metrô.
+- **Gamificação**: XP, combo, meta diária, sequência com proteção, missões diárias, gemas, loja e conquistas.
+- **Personalização**: nivelamento por produção, mapa de erros e mapa de sotaque que alimentam a professora.
+- **Acessível**: teclado, leitor de tela, alto contraste, tema escuro, fala sempre opcional.
 
-## Áudio com ElevenLabs
-O navegador **nunca** recebe a chave da API. O áudio é pré-gerado em build:
+Lista completa com status: [`docs/BACKLOG.md`](docs/BACKLOG.md) (130 features, 85 implementadas).
 
-```bash
-npm run audio -- --dry-run --lessons                    # estimativa de créditos
-ELEVENLABS_API_KEY=sk_... npm run audio -- --lessons    # gera public/audio/** + manifest.json
-```
-
-Sem os mp3, o app usa a voz do sistema (Web Speech API) como fallback. A áudio-aula da Lição 1 já está gerada
-(`public/audio/lessons/u1-l1-intro.mp3`).
+## Chave da ElevenLabs
+Nunca cole a chave no código nem no chat. Defina `ELEVENLABS_API_KEY` no ambiente do servidor.
+O professor usa o agente `agent_2001m7cr5kzdf2srmtvn4p87nxzr` (troque com `ELEVENLABS_AGENT_ID`).
 
 ## Documentação
 | Arquivo | Conteúdo |
 |---|---|
-| [`specs/SPEC.md`](specs/SPEC.md) | Spec (SDD): funcionalidades F-01…F-09, critérios de aceite, bounded contexts (DDD), gauntlet |
-| [`docs/PESQUISA.md`](docs/PESQUISA.md) | Fundamentação científica com referências verificadas e matriz princípio → funcionalidade |
-| [`docs/PLANO-DE-AULAS.md`](docs/PLANO-DE-AULAS.md) | Currículo A1→A2, anatomia da lição, rotina diária |
-| [`docs/ROADMAP.md`](docs/ROADMAP.md) | Próximos passos (tutor de conversação por voz, sync, novos idiomas) |
-
-## Arquitetura
-```
-src/
-  domain/            # puro, testado — sem React
-    curriculum/      # tipos do curso
-    practice/        # builder de lições/revisões + correção tolerante
-    srs/             # adaptador FSRS
-    pronunciation/   # pontuação de fala + dicas PT-BR
-    motivation/      # XP, streak/freeze, níveis, conquistas
-  application/       # casos de uso (completeSession)
-  content/en/        # curso de inglês (dados)
-  infra/             # áudio, reconhecimento de voz, sfx, storage
-  ui/                # telas, exercícios, SVGs
-scripts/
-  generate-audio.mjs # ElevenLabs → public/audio
-  e2e/smoke.mjs      # gauntlet: fluxo completo no Chromium
-```
-
-Adicionar um idioma = criar `src/content/<lang>/course.ts` com a mesma estrutura.
+| [`specs/SPEC-v2.md`](specs/SPEC-v2.md) | Spec da plataforma: loop central, contextos DDD, critérios de aceite, decisões |
+| [`specs/SPEC.md`](specs/SPEC.md) | Spec da trilha base A1 (v1) |
+| [`docs/BACKLOG.md`](docs/BACKLOG.md) | 130 features por área com status e prioridade |
+| [`docs/PESQUISA.md`](docs/PESQUISA.md) | Fundamentação científica com referências verificadas |
+| [`docs/PLANO-DE-AULAS.md`](docs/PLANO-DE-AULAS.md) | Plano da trilha base A1→A2 |
+| [`prototipos/tech-english.html`](prototipos/tech-english.html) | Protótipo da trilha de daily e entrevista |
