@@ -28,7 +28,10 @@ export type Route =
   | { name: 'weekly' }
   | { name: 'drill'; id: string }
   | { name: 'missions' }
-  | { name: 'mission'; id: string };
+  | { name: 'mission'; id: string }
+  | { name: 'meetings' }
+  | { name: 'meeting'; id: string }
+  | { name: 'copilot' };
 
 const MODES = ['conversation', 'drill', 'roleplay', 'interview', 'call'];
 
@@ -64,6 +67,9 @@ export function parse(hash: string): Route {
     case 'treino': return b ? { name: 'drill', id: b } : { name: 'lab' };
     case 'simulacoes': return { name: 'missions' };
     case 'simulacao': return b ? { name: 'mission', id: b } : { name: 'missions' };
+    case 'reunioes': return { name: 'meetings' };
+    case 'reuniao': return b ? { name: 'meeting', id: b } : { name: 'meetings' };
+    case 'copiloto': return { name: 'copilot' };
     default: return { name: 'home' };
   }
 }
@@ -95,5 +101,8 @@ export function toHash(r: Route): string {
     case 'drill': return `#treino--${r.id}`;
     case 'missions': return '#simulacoes';
     case 'mission': return `#simulacao--${r.id}`;
+    case 'meetings': return '#reunioes';
+    case 'meeting': return `#reuniao--${r.id}`;
+    case 'copilot': return '#copiloto';
   }
 }

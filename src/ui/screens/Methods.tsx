@@ -22,6 +22,8 @@ const STORIES = [...BASE_STORIES, ...STORIES_EXTRA];
 export function Lab({ go }: { go: (r: Route) => void }) {
   const { state } = useStore();
   const items: { title: string; what: string; why: string; route: Route; tag: string }[] = [
+    { tag: 'Reunião', title: 'Reunião ao vivo', what: 'Uma call com 2 ou 3 colegas que conversam, te chamam pelo nome e perguntam. Quando você erra, eles repetem do jeito certo, como uma pessoa faz.', why: 'Treina o que trava de verdade: várias vozes, pergunta direta e pouco tempo para montar a frase.', route: { name: 'meetings' } },
+    { tag: 'Reunião real', title: 'Copiloto de reunião', what: 'Aberto ao lado da sua call de verdade: ouve só você, não fala nada e mostra a correção em silêncio.', why: 'Seus erros reais viram treino com repetição espaçada.', route: { name: 'copilot' } },
     { tag: 'Vida real', title: 'Simulações do dia a dia', what: 'Daily, reunião, gerente, cliente, entrevista, restaurante, hotel: conversas completas em que o personagem reage ao que você diz.', why: 'O sucesso é medido pelo que você consegue fazer na conversa, não só pela gramática.', route: { name: 'missions' } },
     { tag: 'Tempo real', title: 'Treinador ao vivo', what: 'Fale e veja o erro ser marcado enquanto fala. Conserte a própria frase com ajuda em degraus.', why: 'Autocorreção guiada: quem conserta o próprio erro retém mais do que quem só ouve a resposta.', route: { name: 'teacher' } },
     { tag: 'Fluência', title: 'Fluência 60 · 45 · 30', what: 'Conte a mesma coisa três vezes, com cada vez menos tempo.', why: 'Técnica 4/3/2: repetir o mesmo conteúdo sob pressão de tempo automatiza a fala.', route: { name: 'fluency' } },

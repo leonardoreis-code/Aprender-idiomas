@@ -11,7 +11,7 @@ ELEVENLABS_API_KEY=sk_... npm start      # http://localhost:8787  (sem a chave t
 # desenvolvimento
 npm run dev:api   # backend na 8787
 npm run dev       # front com hot reload (proxy /api → 8787)
-npm test          # 370 testes (domínio + validação de todo o conteúdo)
+npm test          # 416 testes (domínio + validação de todo o conteúdo)
 ```
 
 ## Como o aprendizado é comprovado
@@ -32,6 +32,16 @@ npm test          # 370 testes (domínio + validação de todo o conteúdo)
 Vinte conversas completas (daily com bloqueio, avisar atraso, discordar em reunião, call com cliente, entrevista, restaurante,
 hotel…). O personagem reage ao que você diz, os objetivos acendem enquanto você fala e a correção aparece embaixo da sua
 fala sem interromper. Dá para colocar seu cargo, projeto e colegas reais nas falas.
+
+## Reunião ao vivo e copiloto de reunião real
+- **Reunião ao vivo** (`#reunioes`): call com 2 ou 3 colegas (vozes e avatares diferentes) que conversam entre si,
+  te chamam pelo nome, perguntam, cobram quando você fica no mudo e reagem ao que você disse. Quando você erra,
+  o colega devolve a ideia já certa ("So you went to the client?"), no máximo 1 vez a cada 2 falas; o detalhe vai
+  para um chat que só você vê. 6 reuniões: daily, planning, incidente, cliente, entrevista, retro.
+- **Copiloto** (`#copiloto`): para a reunião de verdade. Aberto ao lado da call, com fone, ouve só você, nunca
+  fala e mostra a correção em silêncio. Os erros vão para o banco pessoal.
+- O app **não entra** no Google Meet: não há API aberta para um bot falar na sala, e corrigir em voz alta na frente
+  do time expõe a pessoa. Ver [`specs/SPEC-meet.md`](specs/SPEC-meet.md).
 
 ## Treinador ao vivo e novas metodologias
 - **Treinador ao vivo**: o texto aparece enquanto você fala e o erro é sublinhado na hora por 78 regras que rodam no

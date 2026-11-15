@@ -239,6 +239,84 @@ Respond ONLY with JSON: {"reply":"","goals_met":[""],"errors":[{"quote":"","fix"
   };
 }
 
+export interface MeetReply {
+  /** Falas dos colegas, em ordem (1 a 3). */
+  lines: { by: string; text: string }[];
+  goalsMet: string[];
+  errors: CoachReply['errors'];
+  /** Reformulação natural de um erro, já dentro de uma das falas (só informativo). */
+  recast: boolean;
+  done: boolean;
+}
+
+/**
+ * Um turno da reunião ao vivo com o Claude fazendo os colegas. O roteiro dá a pauta;
+ * os colegas reagem ao que o aluno disse de verdade, como pessoas numa call.
+ */
+export async function meetingTurn(input: {
+  setting: string;
+  participants: { id: string; name: string; role: string }[];
+  learner: string;
+  goals: { id: string; label: string; done: boolean }[];
+  /** Próxima pergunta do roteiro (para não perder a pauta). */
+  agendaNext: { by: string; say: string } | null;
+  history: { by: string; text: string }[];
+  utterance: string;
+  alreadyFound: string[];
+  /** Pode reformular um erro nesta resposta? (no máximo 1 a cada 2 falas) */
+  mayRecast: boolean;
+  turns: number;
+  context: string;
+}): Promise<MeetReply | null> {
+  const ids = new Set(input.participants.map((p) => p.id));
+  const r = await askJson<{ lines?: unknown; goals_met?: unknown; errors?: unknown; recast?: unknown; done?: unknown }>(
+    `You are running a realistic video meeting (like Google Meet) to train a Brazilian professional, ${input.learner}, to speak English at work.
+Situation (in Portuguese, known to the learner): ${input.setting}
+Learner's real context: ${input.context}.
+Other people in the call (speak ONLY as them): ${input.participants.map((p) => `${p.id} = ${p.name}, ${p.role}`).join('; ')}.
+Learner's communicative goals: ${input.goals.map((g) => `${g.id}: ${g.label} [${g.done ? 'done' : 'NOT done'}]`).join('; ')}.
+${input.agendaNext ? `Next item on the agenda (use it when the current topic is covered): ${input.agendaNext.by} asks "${input.agendaNext.say}"` : 'The agenda is finished: wrap up the meeting naturally.'}
+Recent conversation:
+${input.history.slice(-12).map((h) => `${h.by}: ${h.text}`).join('\n')}
+${input.learner} just said (speech recognition, ignore punctuation): "${input.utterance}"
+Learner turns so far: ${input.turns}.
+
+Write what happens next in the call, as 1 to 3 short spoken lines from the participants (each line max 2 sentences, contractions, natural meeting talk). React to WHAT the learner actually said: ask a follow-up when it's vague, a colleague may add a comment or politely interrupt, then move the agenda forward. Never teach, never mention grammar or goals.
+${input.mayRecast ? 'If the learner made a clear grammar error that changes or blurs the meaning, the person who asked may naturally echo the idea back CORRECTLY as a quick confirmation question (a recast), e.g. learner "yesterday I go to the client" -> "Oh, so you went to the client yesterday? How did it go?". Do it at most once and set "recast": true.' : 'Do not echo or rephrase the learner\'s sentence this time.'}
+If the learner asks you to repeat or slow down, the last speaker repeats more simply. When every goal is done (or after 10 learner turns), close the meeting naturally and set done true.
+Also judge: "goals_met" = goal ids accomplished IN THIS utterance (meaning counts); "errors" = up to 2 real grammar/word-choice errors, excluding: ${input.alreadyFound.length ? input.alreadyFound.map((x) => `"${x}"`).join(', ') : '(none)'}; "quote" exact excerpt, "fix" corrected excerpt, "clue_pt" hint in Portuguese without the answer, "rule_pt" short rule in Portuguese, "cat" one of: ${CATS.join(', ')}.
+Respond ONLY with JSON: {"lines":[{"by":"<participant id>","text":""}],"goals_met":[""],"errors":[{"quote":"","fix":"","clue_pt":"","rule_pt":"","cat":""}],"recast":false,"done":false}`,
+    'quick',
+  );
+  if (!r || !Array.isArray(r.lines)) return null;
+  const lines = r.lines
+    .map((l) => l as { by?: unknown; text?: unknown })
+    .filter((l): l is { by: string; text: string } => typeof l.by === 'string' && ids.has(l.by) && typeof l.text === 'string' && !!l.text.trim())
+    .slice(0, 3)
+    .map((l) => ({ by: l.by, text: l.text.trim().slice(0, 300) }));
+  if (!lines.length) return null;
+  const goalIds = new Set(input.goals.map((g) => g.id));
+  const low = input.utterance.toLowerCase();
+  const errors = (Array.isArray(r.errors) ? r.errors : [])
+    .map((e) => e as { quote?: unknown; fix?: unknown; clue_pt?: unknown; rule_pt?: unknown; cat?: unknown })
+    .filter((e) => typeof e.quote === 'string' && typeof e.fix === 'string' && e.quote.trim() && e.fix.trim() && e.quote.toLowerCase() !== (e.fix as string).toLowerCase() && low.includes((e.quote as string).toLowerCase().replace(/[.,!?]/g, '').trim()))
+    .slice(0, 2)
+    .map((e) => ({
+      quote: (e.quote as string).slice(0, 160),
+      fix: (e.fix as string).slice(0, 160),
+      clue: typeof e.clue_pt === 'string' ? e.clue_pt.slice(0, 200) : 'Tem um ajuste neste trecho.',
+      explain: typeof e.rule_pt === 'string' ? e.rule_pt.slice(0, 240) : '',
+      cat: typeof e.cat === 'string' && CATS.includes(e.cat) ? e.cat : 'vocabulary',
+    }));
+  return {
+    lines,
+    goalsMet: Array.isArray(r.goals_met) ? r.goals_met.filter((x): x is string => typeof x === 'string' && goalIds.has(x)) : [],
+    errors,
+    recast: r.recast === true && input.mayRecast,
+    done: r.done === true,
+  };
+}
+
 /** "Como se diz?": tradução curta de uma palavra ou expressão, no contexto da conversa. */
 export async function howToSay(pt: string, situation: string): Promise<string | null> {
   const s = caps.sample;

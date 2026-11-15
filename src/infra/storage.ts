@@ -95,6 +95,16 @@ export interface AppState {
     /** Simulações criadas a partir do dia real do aluno. */
     custom: Mission[];
   };
+  /** Reunião ao vivo e copiloto de reunião real. */
+  meet: {
+    results: Record<string, { stars: number; plays: number; at: number }>;
+    /** 'pessoa': o colega reformula o erro + chat privado; 'chat': só o chat privado. */
+    style: 'pessoa' | 'chat';
+    /** Fora do artefato: o microfone abre sozinho quando chega a sua vez. */
+    autoMic: boolean;
+    /** Copiloto: frases ouvidas e erros vistos (acumulado). */
+    copilot: { utterances: number; issues: number; seconds: number };
+  };
 }
 
 const KEY = 'fluente:v1';
@@ -132,6 +142,7 @@ export const defaultState = (): AppState => ({
   bests: {},
   starStories: [],
   sim: { context: { ...DEFAULT_CONTEXT }, today: { day: '', tags: [] }, handsFree: false, results: {}, custom: [] },
+  meet: { results: {}, style: 'pessoa', autoMic: true, copilot: { utterances: 0, issues: 0, seconds: 0 } },
 });
 
 export function loadState(): AppState {
@@ -149,6 +160,7 @@ export function loadState(): AppState {
       plan: { ...base.plan, ...parsed.plan },
       coach: { ...base.coach, ...parsed.coach },
       sim: { ...base.sim, ...parsed.sim, context: { ...base.sim.context, ...parsed.sim?.context } },
+      meet: { ...base.meet, ...parsed.meet, copilot: { ...base.meet.copilot, ...parsed.meet?.copilot } },
       version: 1,
     };
   } catch {

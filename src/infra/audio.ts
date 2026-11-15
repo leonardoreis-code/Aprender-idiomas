@@ -172,13 +172,17 @@ function synth(text: string, opts: PlayOptions): Promise<void> {
       let on = false;
       pulse = setInterval(() => opts.onLevel!((on = !on) ? 0.55 + Math.random() * 0.35 : 0.1), 110);
     }
+    let safety: ReturnType<typeof setTimeout> | undefined;
     const end = () => {
       if (pulse) clearInterval(pulse);
+      clearTimeout(safety);
       opts.onLevel?.(0);
       resolve();
     };
     u.onend = end;
     u.onerror = end;
+    // alguns navegadores (e sem voz instalada) nunca disparam onend: não deixa a tela esperando para sempre
+    safety = setTimeout(end, 2500 + text.split(/\s+/).length * 550 * (opts.slow ? 1.4 : 1));
     window.speechSynthesis.speak(u);
   });
 }

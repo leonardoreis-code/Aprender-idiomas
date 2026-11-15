@@ -37,6 +37,8 @@ import { ErrorReview, PRETEST_INDEXES } from './ui/screens/Learning';
 import { AskDrill, NumbersDrill, QuickResponse, TransformDrill } from './ui/screens/Drills2';
 import { Shadowing, StarBuilder, WeeklyReview, WorkVocab } from './ui/screens/Extras2';
 import { Logo } from './ui/icons/ui';
+import { MeetingRoom, MeetingsHub } from './ui/screens/Meeting';
+import { Copilot } from './ui/screens/Copilot';
 import { NavIcon } from './ui/components/NavIcon';
 
 export default function App() {
@@ -89,11 +91,11 @@ function Shell() {
   }
 
   // telas imersivas (sem navegação)
-  const immersive = route.name === 'practice' || route.name === 'checkpoint';
+  const immersive = route.name === 'practice' || route.name === 'checkpoint' || route.name === 'meeting';
   const screen = <Screen route={route} go={go} />;
   if (immersive) return <>{screen}<Toasts /></>;
 
-  const active = (r: Route) => r.name === route.name || (r.name === 'course' && ['lesson', 'video', 'stories', 'story', 'base'].includes(route.name)) || (r.name === 'lab' && ['teacher', 'fluency', 'retell', 'echo', 'monologue', 'mine', 'accent', 'missions', 'mission', 'errors', 'drill'].includes(route.name)) || (r.name === 'profile' && route.name === 'settings') || (r.name === 'evolution' && ['weekly', 'checkpoint'].includes(route.name));
+  const active = (r: Route) => r.name === route.name || (r.name === 'course' && ['lesson', 'video', 'stories', 'story', 'base'].includes(route.name)) || (r.name === 'lab' && ['teacher', 'fluency', 'retell', 'echo', 'monologue', 'mine', 'accent', 'missions', 'mission', 'errors', 'drill', 'meetings', 'copilot'].includes(route.name)) || (r.name === 'profile' && route.name === 'settings') || (r.name === 'evolution' && ['weekly', 'checkpoint'].includes(route.name));
   return (
     <div className="app">
       <a href="#main" className="skip">Pular para o conteúdo</a>
@@ -192,6 +194,12 @@ function Screen({ route, go }: { route: Route; go: (r: Route) => void }) {
       return <MissionsHub go={go} />;
     case 'mission':
       return <MissionPlayer key={route.id} id={route.id} go={go} />;
+    case 'meetings':
+      return <MeetingsHub go={go} />;
+    case 'meeting':
+      return <MeetingRoom key={route.id} id={route.id} go={go} />;
+    case 'copilot':
+      return <Copilot go={go} />;
     default:
       return <Dashboard go={go} />;
   }

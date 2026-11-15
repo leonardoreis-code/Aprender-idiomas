@@ -39,7 +39,7 @@ export function Dashboard({ go }: { go: (r: Route) => void }) {
   const speakTarget = Math.max(Math.round(phase.speakMin / 6), Math.round((state.profile.minutes ?? 15) / 2));
   const mayaTarget = Math.round(phase.mayaMin / 6);
   const spokenMin = Math.round(d.spokenSec / 60);
-  const simToday = Object.values(state.sim.results).some((r) => dayKey(new Date(r.at)) === todayKey);
+  const simToday = [...Object.values(state.sim.results), ...Object.values(state.meet.results)].some((r) => dayKey(new Date(r.at)) === todayKey);
   const noBaseline = state.checkpoints.length === 0;
   // um passo marcado não "desmarca" no mesmo dia (frases que vencem depois não apagam a revisão feita)
   const steps: { label: string; sub: string; done: boolean; go: Route }[] = [
@@ -56,7 +56,7 @@ export function Dashboard({ go }: { go: (r: Route) => void }) {
         ? { label: `Aula: ${next.title}`, sub: 'Leitura curta e prática, terminando em voz alta', done: false, go: { name: 'lesson', id: next.id } }
         : { label: 'Treino dos meus erros', sub: 'Frases das estruturas em que você mais erra', done: false, go: { name: 'practice', lessonId: 'erros' } },
     { label: 'Fala livre de 1 minuto', sub: d.wpmN ? `${Math.round(d.wpmSum / d.wpmN)} palavras por minuto hoje` : 'Fale sem parar sobre a pergunta do dia', done: d.wpmN > 0, go: { name: 'monologue' } },
-    { label: 'Uma simulação do dia a dia', sub: simToday ? 'Feita hoje' : `Daily, reunião, cliente (${mayaTarget} min)`, done: simToday || d.mayaSec >= mayaTarget * 60, go: { name: 'missions' } },
+    { label: 'Uma reunião ao vivo', sub: simToday ? 'Feita hoje' : `Daily, planning, cliente, incidente (${mayaTarget} min)`, done: simToday || d.mayaSec >= mayaTarget * 60, go: { name: 'meetings' } },
   ];
   const doneSteps = steps.filter((s) => s.done).length;
   const nextStep = steps.find((s) => !s.done);
@@ -103,7 +103,7 @@ export function Dashboard({ go }: { go: (r: Route) => void }) {
           {nextStep ? (
             <button className="btn btn-primary btn-block today-go" onClick={() => go(nextStep.go)}>Continuar: {nextStep.label} →</button>
           ) : (
-            <button className="btn btn-primary btn-block today-go" onClick={() => go({ name: 'missions' })}>Quer mais? Outra simulação →</button>
+            <button className="btn btn-primary btn-block today-go" onClick={() => go({ name: 'meetings' })}>Quer mais? Outra reunião →</button>
           )}
           <button className="link-btn" onClick={() => go({ name: 'practice', lessonId: 'rapido' })}>Dia corrido? Faça só 5 frases (3 minutos)</button>
         </section>
