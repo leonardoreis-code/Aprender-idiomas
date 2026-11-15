@@ -49,8 +49,8 @@ export interface Drill {
  * ---------------------------------------------------------------- */
 export interface SpeakingLesson {
   id: string;
-  /** Trilha: zero (nunca estudou), fala (entende mas não fala), tech (trabalho em tecnologia). */
-  track: 'zero' | 'fala' | 'tech';
+  /** Trilha: zero (nunca estudou), fala (entende mas não fala), tech (trabalho em tecnologia), b2 (rumo ao B2). */
+  track: 'zero' | 'fala' | 'tech' | 'b2';
   order: number;
   title: string;
   level: Cefr;
@@ -90,7 +90,7 @@ export type StoryLine =
 
 export interface Story {
   id: string;
-  track: 'zero' | 'fala' | 'tech';
+  track: 'zero' | 'fala' | 'tech' | 'b2';
   title: string;
   level: Cefr;
   setting: string;
@@ -117,7 +117,7 @@ export interface Slide {
 
 export interface VideoLesson {
   id: string;
-  track: 'zero' | 'fala' | 'tech';
+  track: 'zero' | 'fala' | 'tech' | 'b2';
   title: string;
   level: Cefr;
   /** Aula escrita relacionada (SpeakingLesson.id), se houver. */

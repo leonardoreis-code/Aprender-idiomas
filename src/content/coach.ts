@@ -73,7 +73,7 @@ export const PATTERN_FOLLOWUPS: { en: string; pt: string }[] = [
 export interface RetellStory {
   id: string;
   title: string;
-  level: 'A2' | 'B1';
+  level: 'A2' | 'B1' | 'B2';
   text: string;
   /** Ideias que o reconto precisa conter; cada grupo aceita qualquer uma das palavras. */
   ideas: { label: string; keys: string[][] }[];

@@ -73,7 +73,7 @@ export function StoriesList({ go }: { go: (r: Route) => void }) {
       <div className="story-grid">
         {stories.map((s) => (
           <button key={s.id} className={`tile story-tile ${state.storiesDone.includes(s.id) ? 'done' : ''}`} onClick={() => go({ name: 'story', id: s.id })}>
-            <span className="ex-kicker">{{ zero: 'Do zero', fala: 'Destravar a fala', tech: 'Tech' }[s.track]} · {s.level}</span>
+            <span className="ex-kicker">{{ zero: 'Do zero', fala: 'Destravar a fala', tech: 'Tech', b2: 'Rumo ao B2' }[s.track]} · {s.level}</span>
             <strong className="tile-title">{s.title}</strong>
             <span className="muted">{s.setting}</span>
             <span className="cast-dots" aria-hidden>{s.characters.map((c) => <i key={c.id} style={{ background: c.color }} />)}</span>

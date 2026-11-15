@@ -27,7 +27,7 @@ export function LessonPage({ lesson, hasVideo, go }: { lesson: SpeakingLesson; h
     <main className="shell lesson-page" id="main">
       <button className="link-btn back" onClick={() => go({ name: 'course' })}><BackIcon /> Curso</button>
       <header className="lesson-head">
-        <span className="ex-kicker">{{ zero: 'Do zero', fala: 'Destravar a fala', tech: 'Inglês para tech' }[lesson.track]} · Aula {lesson.order} · {lesson.level} · {lesson.minutes} min</span>
+        <span className="ex-kicker">{{ zero: 'Do zero', fala: 'Destravar a fala', tech: 'Inglês para tech', b2: 'Rumo ao B2' }[lesson.track]} · Aula {lesson.order} · {lesson.level} · {lesson.minutes} min</span>
         <h1 className="page-title">{lesson.title}</h1>
         <p className="muted">{lesson.goal}</p>
         <div className="pattern-card">

@@ -28,11 +28,17 @@ export interface DayStats {
   /** Treinador ao vivo: erros trabalhados e quantos você consertou SEM ver a resposta. */
   repN: number;
   repSelf: number;
+  /** Resposta rápida: soma (em segundos) e contagem do tempo até começar a falar. */
+  latSum: number;
+  latN: number;
+  /** Pausas longas (> 1,5 s) e minutos de fala em que foram medidas. */
+  pauses: number;
+  pauseMin: number;
 }
 
 export type Daily = Record<string, DayStats>;
 
-export const emptyDay = (): DayStats => ({ spokenSec: 0, spoken: 0, produced: 0, correct: 0, due: 0, dueOk: 0, spwSum: 0, spwN: 0, mayaSec: 0, wpmSum: 0, wpmN: 0, auto: 0, repN: 0, repSelf: 0 });
+export const emptyDay = (): DayStats => ({ spokenSec: 0, spoken: 0, produced: 0, correct: 0, due: 0, dueOk: 0, spwSum: 0, spwN: 0, mayaSec: 0, wpmSum: 0, wpmN: 0, auto: 0, repN: 0, repSelf: 0, latSum: 0, latN: 0, pauses: 0, pauseMin: 0 });
 
 export function addDay(daily: Daily, day: string, patch: Partial<DayStats>): Daily {
   const cur = daily[day] ?? emptyDay();
@@ -57,6 +63,10 @@ export interface WeekSummary {
   auto: number | null;
   /** % dos erros consertados sem ver a resposta; null sem dados. */
   selfRepair: number | null;
+  /** Segundos até começar a responder (resposta rápida); null sem dados. */
+  latency: number | null;
+  /** Pausas longas por minuto de fala; null sem dados. */
+  pausesPerMin: number | null;
   activeDays: number;
 }
 
@@ -86,6 +96,8 @@ export function weekly(daily: Daily, today: string, weeks = 8): WeekSummary[] {
       wpm: acc.wpmN ? Math.round(acc.wpmSum / acc.wpmN) : null,
       auto,
       selfRepair: acc.repN >= 3 ? Math.round((acc.repSelf / acc.repN) * 100) : null,
+      latency: acc.latN >= 3 ? Math.round((acc.latSum / acc.latN) * 10) / 10 : null,
+      pausesPerMin: acc.pauseMin >= 1 ? Math.round((acc.pauses / acc.pauseMin) * 10) / 10 : null,
       activeDays: active,
     });
   }

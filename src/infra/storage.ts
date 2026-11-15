@@ -74,6 +74,10 @@ export interface AppState {
   repairs: RepairRecord[];
   coach: { liveMarks: boolean; echoBest: number };
   /** Simulações do dia a dia. */
+  /** Recordes e contadores simples dos treinos curtos (chave livre, valor numérico). */
+  bests: Record<string, number>;
+  /** Histórias STAR do aluno para entrevistas. */
+  starStories: { id: string; title: string; s: string; t: string; a: string; r: string; at: number }[];
   sim: {
     context: SimContext;
     today: { day: string; tags: string[] };
@@ -111,6 +115,8 @@ export const defaultState = (): AppState => ({
   custom: [],
   repairs: [],
   coach: { liveMarks: true, echoBest: 0 },
+  bests: {},
+  starStories: [],
   sim: { context: { ...DEFAULT_CONTEXT }, today: { day: '', tags: [] }, handsFree: false, results: {} },
 });
 
