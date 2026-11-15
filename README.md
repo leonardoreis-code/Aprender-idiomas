@@ -3,10 +3,12 @@
 Plataforma para quem **entende inglês mas trava para falar** (e também para quem começa do zero).
 O centro de tudo é transformar português em inglês na hora, em voz alta, com uma professora de IA que corrige em tempo real.
 
+**Rodar no seu computador:** guia passo a passo em [`docs/RODAR-NO-SEU-COMPUTADOR.md`](docs/RODAR-NO-SEU-COMPUTADOR.md).
+
 ```bash
 npm install
-npm run build
-ELEVENLABS_API_KEY=sk_... npm start      # http://localhost:8787  (sem a chave também funciona, com voz do sistema)
+npm run local        # compila e abre em http://localhost:8787
+# chaves opcionais: copie .env.example para .env (ANTHROPIC_API_KEY, ELEVENLABS_API_KEY)
 
 # desenvolvimento
 npm run dev:api   # backend na 8787

@@ -1,9 +1,12 @@
 #!/usr/bin/env node
 /**
- * Backend mínimo do Fluente (Node puro, sem dependências).
- * A chave da ElevenLabs fica SÓ aqui (variável ELEVENLABS_API_KEY); o navegador nunca a vê.
+ * Backend do Fluente para rodar no SEU computador.
+ * As chaves ficam só aqui (arquivo .env ou variáveis de ambiente); o navegador nunca as vê.
+ *   ELEVENLABS_API_KEY  → vozes naturais e transcrição (opcional)
+ *   ANTHROPIC_API_KEY   → Claude: avalia frases, colegas que improvisam, correção extra (opcional)
  *
  *   GET  /api/health                → quais recursos de IA estão ativos
+ *   POST /api/llm                    → texto do Claude para um prompt do app ({prompt, tier})
  *   GET  /api/tts?text=&voice=&lang= → mp3 (ElevenLabs), com cache em disco
  *   POST /api/stt                    → transcrição (ElevenLabs Scribe) de um áudio gravado
  *   GET  /api/teacher                → URL assinada para conversar com o professor (agente)
@@ -16,8 +19,20 @@ import { createHash } from 'node:crypto';
 import { existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import { extname, join, normalize } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import Anthropic from '@anthropic-ai/sdk';
 
 const root = join(fileURLToPath(new URL('.', import.meta.url)), '..');
+
+// .env na raiz do projeto (KEY=valor por linha). Variáveis já definidas no sistema têm prioridade.
+const envFile = join(root, '.env');
+if (existsSync(envFile)) {
+  for (const line of readFileSync(envFile, 'utf8').split(/\r?\n/)) {
+    const m = line.match(/^\s*([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.*?)\s*$/);
+    if (!m || line.trim().startsWith('#')) continue;
+    const v = m[2].replace(/^(['"])(.*)\1$/, '$2');
+    if (process.env[m[1]] === undefined && v) process.env[m[1]] = v;
+  }
+}
 const dist = join(root, 'dist');
 const cacheDir = join(root, '.cache', 'tts');
 mkdirSync(cacheDir, { recursive: true });
@@ -44,14 +59,61 @@ setInterval(() => {
 /** Teto diário GLOBAL de gasto na ElevenLabs (caracteres de TTS + chamadas de STT), além do limite por IP. */
 const DAILY_TTS_CHARS = Number(process.env.TTS_DAILY_CHARS || 60_000);
 const DAILY_STT_CALLS = Number(process.env.STT_DAILY_CALLS || 400);
-const spend = { day: '', chars: 0, stt: 0 };
+const DAILY_LLM_CALLS = Number(process.env.LLM_DAILY_CALLS || 400);
+const spend = { day: '', chars: 0, stt: 0, llm: 0 };
 function overBudget(kind, amount) {
   const day = new Date().toISOString().slice(0, 10);
-  if (spend.day !== day) Object.assign(spend, { day, chars: 0, stt: 0 });
-  if (kind === 'tts' ? spend.chars + amount > DAILY_TTS_CHARS : spend.stt + 1 > DAILY_STT_CALLS) return true;
-  if (kind === 'tts') spend.chars += amount;
-  else spend.stt += 1;
+  if (spend.day !== day) Object.assign(spend, { day, chars: 0, stt: 0, llm: 0 });
+  if (kind === 'tts') {
+    if (spend.chars + amount > DAILY_TTS_CHARS) return true;
+    spend.chars += amount;
+    return false;
+  }
+  const limit = kind === 'stt' ? DAILY_STT_CALLS : DAILY_LLM_CALLS;
+  if (spend[kind] + 1 > limit) return true;
+  spend[kind] += 1;
   return false;
+}
+
+/* ---------------- Claude (SDK oficial da Anthropic) ---------------- */
+const LLM_ON = !!(process.env.ANTHROPIC_API_KEY || process.env.ANTHROPIC_AUTH_TOKEN);
+const LLM_MODEL = process.env.ANTHROPIC_MODEL || 'claude-opus-5-5';
+let anthropic = null;
+
+/** O app manda o mesmo prompt que mandaria ao Claude do artefato; aqui ele vai pela API com a sua chave. */
+async function llm(req, res) {
+  if (!LLM_ON) return json(res, 503, { error: 'ANTHROPIC_API_KEY não configurada' });
+  if (foreignOrigin(req)) return json(res, 403, { error: 'origem não permitida' });
+  let body;
+  try {
+    body = JSON.parse((await readBody(req, 300_000)).toString('utf8') || '{}');
+  } catch {
+    return json(res, 400, { error: 'json inválido' });
+  }
+  const prompt = typeof body.prompt === 'string' ? body.prompt.slice(0, 80_000) : '';
+  if (!prompt.trim()) return json(res, 400, { error: 'prompt vazio' });
+  if (overBudget('llm')) return json(res, 429, { error: 'limite diário de IA atingido' });
+  anthropic ??= new Anthropic();
+  try {
+    const r = await anthropic.beta.messages.create({
+      model: LLM_MODEL,
+      max_tokens: 16000,
+      // turnos de conversa ("quick") precisam de resposta rápida; avaliação pode pensar mais
+      output_config: { effort: body.tier === 'quick' ? 'low' : 'medium' },
+      // se o modelo recusar por política, a própria API tenta de novo num modelo de reserva
+      betas: ['server-side-fallback-2026-07-01'],
+      fallbacks: 'default',
+      messages: [{ role: 'user', content: prompt }],
+    });
+    if (r.stop_reason === 'refusal') return json(res, 422, { error: 'pedido recusado pelo modelo' });
+    const text = r.content.filter((b) => b.type === 'text').map((b) => b.text).join('');
+    return json(res, 200, { text });
+  } catch (e) {
+    if (e instanceof Anthropic.AuthenticationError) return json(res, 401, { error: 'chave da Anthropic inválida' });
+    if (e instanceof Anthropic.RateLimitError) return json(res, 429, { error: 'limite da API da Anthropic, tente em instantes' });
+    if (e instanceof Anthropic.APIError) return json(res, 502, { error: `erro da API da Anthropic (${e.status ?? '?'})` });
+    return json(res, 502, { error: 'falha ao falar com a API da Anthropic' });
+  }
 }
 
 /** Só a própria página pode gastar créditos: pedido com Origin de outro site é recusado. */
@@ -164,7 +226,8 @@ export const server = createServer(async (req, res) => {
     const url = new URL(req.url, 'http://localhost');
     if (url.pathname.startsWith('/api/')) {
       if (rateLimited(ip)) return json(res, 429, { error: 'muitas requisições, aguarde um minuto' });
-      if (url.pathname === '/api/health') return json(res, 200, { tts: !!KEY, stt: !!KEY, teacher: true, agentId: AGENT_ID });
+      if (url.pathname === '/api/health') return json(res, 200, { tts: !!KEY, stt: !!KEY, llm: LLM_ON, teacher: true, agentId: AGENT_ID });
+      if (url.pathname === '/api/llm' && req.method === 'POST') return await llm(req, res);
       if (url.pathname === '/api/tts' && req.method === 'GET') return await tts(req, res, url);
       if (url.pathname === '/api/stt' && req.method === 'POST') return await stt(req, res);
       if (url.pathname === '/api/teacher') return await teacher(req, res);
@@ -177,5 +240,12 @@ export const server = createServer(async (req, res) => {
 });
 
 if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
-  server.listen(PORT, () => console.log(`Fluente em http://localhost:${PORT}  (IA: ${KEY ? 'ativa' : 'sem chave — usa voz do sistema'})`));
+  // só este computador acessa (as rotas de IA gastam os seus créditos); HOST=0.0.0.0 abre para a rede
+  const HOST = process.env.HOST || '127.0.0.1';
+  server.listen(PORT, HOST, () => {
+    console.log(`\nFluente rodando em http://localhost:${PORT}`);
+    console.log(`  Vozes ElevenLabs: ${KEY ? 'ativas' : 'desligadas (usa a voz do sistema)'}`);
+    console.log(`  Claude (IA):      ${LLM_ON ? `ativo (${LLM_MODEL})` : 'desligado (só correção por regras)'}`);
+    console.log('  Para parar: Ctrl+C\n');
+  });
 }

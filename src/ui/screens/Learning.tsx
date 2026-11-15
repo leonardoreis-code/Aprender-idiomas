@@ -178,13 +178,35 @@ export function BackupPanel() {
   const [text, setText] = useState('');
   const [msg, setMsg] = useState<string | null>(null);
   const [show, setShow] = useState(false);
+  const [showCurrent, setShowCurrent] = useState(false);
   const json = () => JSON.stringify(store.state);
+  /** Arquivo .json: o jeito mais seguro de levar o progresso para outro computador. */
+  const download = () => {
+    try {
+      const url = URL.createObjectURL(new Blob([json()], { type: 'application/json' }));
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `fluente-backup-${new Date().toISOString().slice(0, 10)}.json`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      setMsg('Arquivo baixado. No outro computador: Ajustes → Restaurar de um backup → escolha o arquivo.');
+    } catch {
+      setShowCurrent(true);
+      setMsg('Não consegui baixar aqui. Copie o texto abaixo.');
+    }
+  };
+  const readFile = (f: File | undefined) => {
+    if (!f) return;
+    void f.text().then((t) => setText(t));
+  };
   const copy = async () => {
     try {
       await navigator.clipboard.writeText(json());
       setMsg('Backup copiado. Cole num lugar seguro (notas, e-mail para você mesmo).');
     } catch {
-      setShow(true);
+      setShowCurrent(true);
       setMsg('Não consegui copiar sozinho. Selecione e copie o texto abaixo.');
     }
   };
@@ -193,7 +215,7 @@ export function BackupPanel() {
       const parsed = JSON.parse(text) as Partial<AppState>;
       if (typeof parsed !== 'object' || !parsed || !('motivation' in parsed) || !('production' in parsed)) throw new Error('formato');
       const base = defaultState();
-      store.set(() => ({ ...base, ...parsed, motivation: { ...base.motivation, ...parsed.motivation }, settings: { ...base.settings, ...parsed.settings }, profile: { ...base.profile, ...parsed.profile }, plan: { ...base.plan, ...parsed.plan }, coach: { ...base.coach, ...parsed.coach }, sim: { ...base.sim, ...parsed.sim }, version: 1 }));
+      store.set(() => ({ ...base, ...parsed, motivation: { ...base.motivation, ...parsed.motivation }, settings: { ...base.settings, ...parsed.settings }, profile: { ...base.profile, ...parsed.profile }, plan: { ...base.plan, ...parsed.plan }, coach: { ...base.coach, ...parsed.coach }, sim: { ...base.sim, ...parsed.sim, context: { ...base.sim.context, ...parsed.sim?.context } }, meet: { ...base.meet, ...parsed.meet, copilot: { ...base.meet.copilot, ...parsed.meet?.copilot } }, version: 1 }));
       setText('');
       setMsg('Progresso restaurado.');
     } catch {
@@ -205,10 +227,22 @@ export function BackupPanel() {
     <section style={{ marginTop: 28 }}>
       <h2 style={{ fontSize: '1.3rem' }}>Backup do progresso</h2>
       <p className="muted">Seu progresso fica só neste navegador. Em 6 meses de estudo, vale guardar uma cópia de vez em quando.</p>
-      <div className="row"><button className="btn btn-ghost" onClick={copy}>Copiar backup</button><button className="btn btn-ghost" onClick={() => setShow(!show)}>{show ? 'Esconder' : 'Restaurar de um backup'}</button></div>
+      <div className="row" style={{ flexWrap: 'wrap' }}>
+        <button className="btn btn-ghost" onClick={download}>Baixar arquivo de backup</button>
+        <button className="btn btn-ghost" onClick={copy}>Copiar backup</button>
+        <button className="btn btn-ghost" onClick={() => setShow(!show)}>{show ? 'Esconder' : 'Restaurar de um backup'}</button>
+      </div>
+      {showCurrent && (
+        <div className="stack" style={{ marginTop: 10 }}>
+          <label htmlFor="bk-now" className="muted">Seu backup atual (selecione tudo e copie)</label>
+          <textarea id="bk-now" className="text-input" rows={4} readOnly value={json()} onFocus={(e) => e.currentTarget.select()} />
+        </div>
+      )}
       {show && (
         <div className="stack" style={{ marginTop: 10 }}>
-          <label htmlFor="bk" className="muted">Cole aqui o texto do backup (ou copie o atual, que está abaixo)</label>
+          <label htmlFor="bk-file" className="muted">Escolha o arquivo de backup…</label>
+          <input id="bk-file" type="file" accept="application/json,.json,.txt" onChange={(e) => readFile(e.target.files?.[0])} />
+          <label htmlFor="bk" className="muted">…ou cole aqui o texto do backup</label>
           <textarea id="bk" className="text-input" rows={4} value={text} onChange={(e) => setText(e.target.value)} placeholder={json().slice(0, 80) + '…'} />
           <button className="btn btn-primary" disabled={!text.trim()} onClick={restore}>Restaurar e substituir o progresso atual</button>
         </div>

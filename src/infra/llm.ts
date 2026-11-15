@@ -4,10 +4,31 @@
  */
 import type { Drill } from '../domain/curriculum/speaking';
 import { normalize } from '../domain/practice/answer';
-import { caps } from './platform';
+import { caps, isArtifact } from './platform';
 import { goalMet, type Mission } from '../domain/sim/engine';
 
-export const llmAvailable = () => !!caps.sample;
+/**
+ * Fora do artefato (no seu computador), o Claude vem do servidor local (/api/llm),
+ * que usa a SUA chave da Anthropic guardada no .env. Descoberto uma vez, na abertura.
+ */
+let serverLlm = false;
+if (!isArtifact && typeof fetch !== 'undefined' && typeof window !== 'undefined') {
+  void fetch('/api/health')
+    .then((r) => (r.ok ? r.json() : null))
+    .then((h: { llm?: boolean } | null) => {
+      serverLlm = !!h?.llm;
+    })
+    .catch(() => {});
+}
+
+export const llmAvailable = () => !!caps.sample || serverLlm;
+
+async function localSample(prompt: string, tier: 'quick' | 'default'): Promise<string | null> {
+  const r = await fetch('/api/llm', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ prompt, tier }) });
+  if (!r.ok) return null;
+  const j = (await r.json()) as { text?: string };
+  return typeof j.text === 'string' ? j.text : null;
+}
 
 /** Próximo índice livre de "Minhas frases": o maior existente, não a quantidade (remover abre buraco). */
 export function nextMineIndex(custom: { id: string }[]): number {
@@ -16,7 +37,16 @@ export function nextMineIndex(custom: { id: string }[]): number {
 
 async function askJson<T>(prompt: string, tier: 'quick' | 'default' = 'default'): Promise<T | null> {
   const s = caps.sample;
-  if (!s) return null;
+  if (!s) {
+    if (!serverLlm) return null;
+    try {
+      const text = await localSample(`${prompt}\n\nReply with the JSON only, no other text.`, tier);
+      const m = text?.match(/[[{][\s\S]*[\]}]/);
+      return m ? (JSON.parse(m[0]) as T) : null;
+    } catch {
+      return null;
+    }
+  }
   try {
     if (s.json) return (await s.json(prompt, { modelTier: tier, cache: false })) as T;
     const r = await s(prompt, { modelTier: tier, cache: false });
@@ -320,10 +350,12 @@ Respond ONLY with JSON: {"lines":[{"by":"<participant id>","text":""}],"goals_me
 /** "Como se diz?": tradução curta de uma palavra ou expressão, no contexto da conversa. */
 export async function howToSay(pt: string, situation: string): Promise<string | null> {
   const s = caps.sample;
-  if (!s) return null;
+  if (!s && !serverLlm) return null;
   try {
-    const r = await s(`A Brazilian learner is in this situation: ${situation}. They got stuck and need the natural spoken English for this Portuguese word or phrase: "${pt}". Answer with ONLY the English (max 8 words, most natural option; if two are common, separate with " / ").`, { modelTier: 'quick' });
-    const t = r.text.trim().replace(/^["']|["'.]$/g, '');
+    const prompt = `A Brazilian learner is in this situation: ${situation}. They got stuck and need the natural spoken English for this Portuguese word or phrase: "${pt}". Answer with ONLY the English (max 8 words, most natural option; if two are common, separate with " / ").`;
+    const raw = s ? (await s(prompt, { modelTier: 'quick' })).text : await localSample(prompt, 'quick');
+    if (!raw) return null;
+    const t = raw.trim().replace(/^["']|["'.]$/g, '');
     return t && t.length < 90 ? t : null;
   } catch {
     return null;
