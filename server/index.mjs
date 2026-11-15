@@ -36,6 +36,35 @@ const MIME = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.
 
 // limite simples por IP para não queimar créditos por abuso
 const hits = new Map();
+setInterval(() => {
+  const now = Date.now();
+  for (const [ip, arr] of hits) if (!arr.some((t) => now - t < 60_000)) hits.delete(ip);
+}, 60_000).unref();
+
+/** Teto diário GLOBAL de gasto na ElevenLabs (caracteres de TTS + chamadas de STT), além do limite por IP. */
+const DAILY_TTS_CHARS = Number(process.env.TTS_DAILY_CHARS || 60_000);
+const DAILY_STT_CALLS = Number(process.env.STT_DAILY_CALLS || 400);
+const spend = { day: '', chars: 0, stt: 0 };
+function overBudget(kind, amount) {
+  const day = new Date().toISOString().slice(0, 10);
+  if (spend.day !== day) Object.assign(spend, { day, chars: 0, stt: 0 });
+  if (kind === 'tts' ? spend.chars + amount > DAILY_TTS_CHARS : spend.stt + 1 > DAILY_STT_CALLS) return true;
+  if (kind === 'tts') spend.chars += amount;
+  else spend.stt += 1;
+  return false;
+}
+
+/** Só a própria página pode gastar créditos: pedido com Origin de outro site é recusado. */
+function foreignOrigin(req) {
+  const o = req.headers.origin;
+  if (!o) return false;
+  try {
+    return new URL(o).host !== req.headers.host;
+  } catch {
+    return true;
+  }
+}
+
 function rateLimited(ip, max = 120) {
   const now = Date.now();
   const arr = (hits.get(ip) || []).filter((t) => now - t < 60_000);
@@ -74,6 +103,8 @@ async function tts(req, res, url) {
     return res.end(readFileSync(file));
   }
   if (!KEY) return json(res, 503, { error: 'ELEVENLABS_API_KEY não configurada' });
+  if (foreignOrigin(req)) return json(res, 403, { error: 'origem não permitida' });
+  if (overBudget('tts', text.length)) return json(res, 429, { error: 'limite diário de voz atingido' });
   const r = await fetch(`${API}/v1/text-to-speech/${voice}?output_format=mp3_44100_64`, {
     method: 'POST',
     headers: { 'xi-api-key': KEY, 'content-type': 'application/json', accept: 'audio/mpeg' },
@@ -88,6 +119,8 @@ async function tts(req, res, url) {
 
 async function stt(req, res) {
   if (!KEY) return json(res, 503, { error: 'ELEVENLABS_API_KEY não configurada' });
+  if (foreignOrigin(req)) return json(res, 403, { error: 'origem não permitida' });
+  if (overBudget('stt')) return json(res, 429, { error: 'limite diário de transcrição atingido' });
   const audio = await readBody(req);
   const type = req.headers['content-type'] || 'audio/webm';
   const form = new FormData();
@@ -125,9 +158,10 @@ function serveStatic(req, res, url) {
 }
 
 export const server = createServer(async (req, res) => {
-  const url = new URL(req.url, 'http://localhost');
   const ip = req.socket.remoteAddress || '?';
   try {
+    // "GET //" ou URL malformada não pode derrubar o processo
+    const url = new URL(req.url, 'http://localhost');
     if (url.pathname.startsWith('/api/')) {
       if (rateLimited(ip)) return json(res, 429, { error: 'muitas requisições, aguarde um minuto' });
       if (url.pathname === '/api/health') return json(res, 200, { tts: !!KEY, stt: !!KEY, teacher: true, agentId: AGENT_ID });

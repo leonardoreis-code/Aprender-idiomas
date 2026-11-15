@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { Drill } from '../../domain/curriculum/speaking';
-import { checkTyped, levenshtein, normalize } from '../../domain/practice/answer';
+import { checkTyped, isInflection, levenshtein, normalize } from '../../domain/practice/answer';
 import { rng, shuffle } from '../../domain/practice/builder';
 import { flashLimitMs, STAGES, type ProductionAttempt, type QueueItem, type Stage } from '../../domain/production/ladder';
 import { detectErrors, ERROR_CATEGORIES } from '../../domain/production/errors';
@@ -35,7 +35,20 @@ interface Outcome {
 }
 
 const accepted = (d: Drill) => [d.en, ...(d.alt ?? [])];
-const stageXp = (s: Stage) => 8 + s * 4;
+
+/**
+ * O reconhecedor erra palavras parecidas ("sheep" por "ship"): aí a nota de pronúncia decide.
+ * Mas só se a frase tem o mesmo tamanho e nenhuma diferença muda a gramática ou o sentido.
+ */
+function soundsAlike(said: string, targets: string[]): boolean {
+  const g = normalize(said).split(' ');
+  return targets.some((t) => {
+    const w = normalize(t).split(' ');
+    return w.length === g.length && w.every((x, i) => x === g[i] || (!/^(not|no|never|do|does|did|is|are|was|were|have|has|had|will|would)$/.test(x) && !isInflection(x, g[i]) && x.length >= 4));
+  });
+}
+// falar vale bem mais que tocar em blocos
+const stageXp = (s: Stage) => 4 + s * 6;
 
 /**
  * Sessão "Pense em inglês": cada frase aparece no degrau em que o aluno está.
@@ -75,7 +88,7 @@ export function ProductionSession({ title, queue: initial, pool, onExit, onDone 
     const a: ProductionAttempt = { drillId: item.drill.id, stage: item.stage, correct: o.correct, hesitant: o.hesitant, ms: Date.now() - started.current, errors: o.errors, words: item.drill.en.split(/\s+/).length, spokenMs: o.spokenMs, due: item.reason === 'due' };
     setAttempts((x) => [...x, a]);
     store.track('produced');
-    if (item.stage >= 3 && o.said) store.track('spoken');
+    if (o.spokenMs) store.track('spoken');
     if (item.stage === 4 && o.correct && !o.hesitant) store.track('perfectFlash');
     if (o.accent?.rules.length) store.recordAccent(o.accent.rules.map((r) => r.id));
     if (o.correct) {
@@ -94,6 +107,17 @@ export function ProductionSession({ title, queue: initial, pool, onExit, onDone 
     }
     setOutcome(o);
     if (o.correct) void speak(item.drill.en);
+  };
+
+  /** Sair no meio não joga fora o que já foi respondido. */
+  const exit = () => {
+    stopAudio();
+    if (!finished && attempts.length) {
+      store.recordProduction(attempts);
+      store.gainXp(xp.current);
+      store.toast({ title: 'Progresso salvo', body: `${attempts.length} resposta(s) guardada(s).`, kind: 'info' });
+    }
+    onExit();
   };
 
   const next = () => {
@@ -117,7 +141,7 @@ export function ProductionSession({ title, queue: initial, pool, onExit, onDone 
         e.preventDefault();
         next();
       }
-      if (e.key === 'Escape') onExit();
+      if (e.key === 'Escape') exit();
     };
     const t = setTimeout(() => window.addEventListener('keydown', h), 0);
     return () => {
@@ -133,7 +157,7 @@ export function ProductionSession({ title, queue: initial, pool, onExit, onDone 
   return (
     <div className="session">
       <header className="session-top">
-        <button className="icon-btn" onClick={() => { stopAudio(); onExit(); }} aria-label="Sair (Esc)"><CloseIcon /></button>
+        <button className="icon-btn" onClick={exit} aria-label="Sair e salvar (Esc)"><CloseIcon /></button>
         <div className="progress" role="progressbar" aria-label={title} aria-valuemin={0} aria-valuemax={queue.length} aria-valuenow={idx}>
           <span style={{ width: `${Math.max(((idx + (outcome ? 1 : 0)) / queue.length) * 100, 3)}%` }} />
         </div>
@@ -158,7 +182,7 @@ export function ProductionSession({ title, queue: initial, pool, onExit, onDone 
       </main>
 
       {judging && <p role="status" className="muted" style={{ padding: '0 16px' }}><span className="spinner" aria-hidden /> Verificando se a sua forma também está certa…</p>}
-      {outcome && <Feedback drill={item.drill} o={outcome} onNext={next} onSave={() => store.set((s) => ({ ...s, notebook: [{ en: item.drill.en, pt: item.drill.pt, at: Date.now() }, ...s.notebook.filter((n) => n.en !== item.drill.en)] }))} />}
+      {outcome && <Feedback drill={item.drill} o={outcome} sayAloud={item.stage < 3 && outcome.correct && micAvailable()} onSpoken={(ms) => { store.logDay({ spokenSec: ms / 1000, spoken: 1 }); store.track('spoken'); }} onNext={next} onSave={() => store.set((s) => ({ ...s, notebook: [{ en: item.drill.en, pt: item.drill.pt, at: Date.now() }, ...s.notebook.filter((n) => n.en !== item.drill.en)] }))} />}
     </div>
   );
 }
@@ -296,18 +320,20 @@ function StageSpeak({ drill, flash, done, onResolve }: { drill: Drill; flash: bo
   }, [flash, done, limit]);
 
   const fromRecording = (r: Recording) => {
-    const said = r.text;
-    const v = said ? checkTyped(said, accepted(drill)) : 'wrong';
-    const accent = said ? analyzeAccent(drill.en, said) : undefined;
+    const said = r.text?.trim();
+    // nada reconhecido = problema de microfone, não erro de inglês: não desce degrau
+    if (!said) return;
+    const v = checkTyped(said, accepted(drill));
+    const accent = analyzeAccent(drill.en, said);
     const late = flash && Date.now() - t0.current > limit + 1500;
     onResolve({
-      correct: v !== 'wrong' || (accent?.score ?? 0) >= 85,
+      correct: v !== 'wrong' || ((accent?.score ?? 0) >= 85 && soundsAlike(said, accepted(drill))),
       hesitant: v === 'almost' || late || (accent?.score ?? 100) < 100,
-      said: said || '(não ouvi nada)',
-      errors: v === 'wrong' && said ? detectErrors(said, accepted(drill)) : [],
+      said,
+      errors: v === 'wrong' ? detectErrors(said, accepted(drill)) : [],
       accent,
       recordingUrl: r.url,
-      spokenMs: said ? r.durationMs : undefined,
+      spokenMs: r.durationMs,
       note: late ? 'Certo, mas passou do tempo. Na próxima, tente começar a falar antes de montar tudo na cabeça.' : r.source === 'scribe' ? 'Análise feita com ElevenLabs Scribe.' : undefined,
     });
   };
@@ -336,8 +362,9 @@ function StageSpeak({ drill, flash, done, onResolve }: { drill: Drill; flash: bo
 }
 
 /* ---------------------- Feedback ---------------------- */
-function Feedback({ drill, o, onNext, onSave }: { drill: Drill; o: Outcome; onNext: () => void; onSave: () => void }) {
+function Feedback({ drill, o, sayAloud, onSpoken, onNext, onSave }: { drill: Drill; o: Outcome; sayAloud: boolean; onSpoken: (ms: number) => void; onNext: () => void; onSave: () => void }) {
   const [saved, setSaved] = useState(false);
+  const [said, setSaid] = useState<string | null>(null);
   const ok = o.correct;
   return (
     <footer className={`footer ${ok ? 'ok' : 'bad'} pop-in`} aria-live="assertive">
@@ -360,6 +387,18 @@ function Feedback({ drill, o, onNext, onSave }: { drill: Drill; o: Outcome; onNe
               <small key={r.id} className="err-pill accent"><b>Pronúncia · {ACCENT_RULES[r.id].title}</b> ({r.words.join(', ')}): {ACCENT_RULES[r.id].howTo}</small>
             ))}
             {o.note && <small style={{ display: 'block', marginTop: 4 }}>{o.note}</small>}
+            {sayAloud && (
+              <div className="say-aloud">
+                {said === null ? (
+                  <>
+                    <small><b>Agora diga em voz alta.</b> Escrever certo não é falar: feche o ciclo com a boca.</small>
+                    <MicButton label="Dizer a frase em voz alta" maxMs={9000} onResult={(r) => { if (r.text?.trim()) { setSaid(r.text); onSpoken(r.durationMs); } }} />
+                  </>
+                ) : (
+                  <small lang="en"><CheckIcon size={14} /> Você disse: <i>{said}</i></small>
+                )}
+              </div>
+            )}
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 8 }}>
               <button type="button" className="chip" onClick={() => speak(drill.en)}><SpeakerIcon size={18} /> Nativo</button>
               <button type="button" className="chip" onClick={() => speak(drill.en, { slow: true })}><TurtleIcon size={18} /> Devagar</button>

@@ -43,9 +43,11 @@ const r = String.raw;
 const mk = (src: string) => new RegExp(src, 'gd');
 /** Início de oração: começo do texto, pontuação ou conector. */
 const START = r`(?:^|[.!?;,]\s+|\b(?:and|but|because|so|then|when|if|today|now|yesterday|think)\s+)`;
+/** Início de oração sem conectivos que carregam sujeito ("and have two kids") nem "yesterday/today" que podem ser sujeito. */
+const START_STRICT = r`(?:^|[.!?;]\s+|\b(?:because|when|if|think)\s+)`;
 const NUM = r`(?:\d{1,3}|(?:twenty|thirty|forty|fifty|sixty)(?:[- ](?:one|two|three|four|five|six|seven|eight|nine))?|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen)`;
 const VERBS = 'work|live|like|want|need|have|go|do|say|know|think|make|use|study|play|speak|help|start|love|feel|come|take|get|give|look|try|call|ask|run|write|read|understand|believe|talk|teach|learn|watch|drive|lead|manage|build|send|bring|stay|spend|pay|tell|mean|keep|seem';
-const AUX_BEFORE = 'do|does|did|can|could|will|would|should|may|might|must|let|make|makes|made|help|helps|see|saw|to';
+const AUX_BEFORE = "do|does|did|doesn't|didn't|don't|can|can't|could|couldn't|will|won't|would|wouldn't|should|shouldn't|may|might|must|let|make|makes|made|help|helps|see|saw|to";
 
 const PAST: Record<string, string> = {
   go: 'went', have: 'had', work: 'worked', see: 'saw', make: 'made', do: 'did', get: 'got', come: 'came', take: 'took', finish: 'finished',
@@ -76,7 +78,7 @@ const RULES: Rule[] = [
   /* ---------- "ter" do português onde o inglês usa "be" ---------- */
   {
     id: 'age', cat: 'be-have',
-    re: mk(r`\b(i|you|we|they|he|she) (have|has|had) (${NUM}) years(?: old)?\b(?! (?:of|in|to|left|working|studying|at|with|as|doing))`),
+    re: mk(r`\b(i|you|we|they|he|she) (have|has|had) (${NUM}) years(?: old)?\b(?! (?:of|in|to|left|working|studying|at|with|as|doing|experience|ago))`),
     fix: (m) => `${m[1]} ${be(m[1], m[2] === 'had')} ${m[3]} years old`,
     clue: 'Idade em inglês não usa o verbo "ter".',
     explain: 'Idade usa o verbo to be: "I am 30 years old", nunca "I have 30 years".',
@@ -91,7 +93,7 @@ const RULES: Rule[] = [
   /* ---------- sujeito ---------- */
   {
     id: 'it-subject', cat: 'missing-subject', g: 1,
-    re: mk(r`${START}((?:is|was|will be) (?:raining|snowing|cold|hot|late|early|important|possible|impossible|difficult|hard|easy|necessary|good|bad|true|better|sunny|windy|common|normal|interesting|strange|clear|obvious))\b`),
+    re: mk(r`${START_STRICT}((?:is|was|will be) (?:raining|snowing|cold|hot|late|early|important|possible|impossible|difficult|hard|easy|necessary|good|bad|true|better|sunny|windy|common|normal|interesting|strange|clear|obvious))\b`),
     fix: (m) => `it ${m[1]}`,
     clue: 'Falta alguém antes do verbo: quem "is"?',
     explain: 'Toda oração precisa de sujeito. "É importante" = "It is important"; "Está chovendo" = "It is raining".',
@@ -105,7 +107,7 @@ const RULES: Rule[] = [
   },
   {
     id: 'have-existential', cat: 'there-is', g: 1,
-    re: mk(r`${START}((?:have|has|had) (a lot of|lots of|a|an|one|many|some|two|three|four|five|no)) (?!nice|good|great|safe|wonderful|seat|look|drink|rest|break|fun)`),
+    re: mk(r`${START_STRICT}((?:have|has|had) (a lot of|lots of|a|an|one|many|some|two|three|four|five|no)) (?!nice|good|great|safe|wonderful|seat|look|drink|rest|break|fun)`),
     fix: (m) => `${/^(a|an|one|no)$/.test(m[2]) ? 'there is' : 'there are'} ${m[2]}`,
     clue: 'A frase começa com "tem…": quem tem? Se é "existe", o inglês usa outra expressão.',
     explain: '"Tem muitos bugs" = "There are many bugs". Começar a frase com "Have" não funciona em inglês.',
@@ -148,7 +150,7 @@ const RULES: Rule[] = [
   },
   {
     id: 'i-has', cat: 'agreement', g: 1,
-    re: /\b(?:i|you|we|they) (has|doesn't|does not)\b/gd,
+    re: mk(r`${START}(?:i|you|we|they) (has|doesn't|does not)\b`),
     fix: (m) => ({ has: 'have', "doesn't": "don't", 'does not': 'do not' })[m[1]]!,
     clue: 'Has e doesn\'t são só para he / she / it.',
     explain: 'I, you, we e they usam "have" e "don\'t".',
@@ -249,7 +251,7 @@ const RULES: Rule[] = [
   },
   {
     id: 'ing-after-verb', cat: 'verb-pattern',
-    re: /\b(enjoy|enjoyed|finish|finished|avoid|avoided|consider|considered|suggest|suggested|keep|kept|practice|practiced) to (\w+)\b/gd,
+    re: /\b(enjoy|enjoyed|finish|finished|avoid|avoided|consider|considered|suggest|suggested|keep|kept|practice|practiced) to (?!(?:the|a|an|my|your|his|her|our|their|this|that|these|those|be|me|him|us|them|it|you)\b)(\w+)\b/gd,
     fix: (m) => `${m[1]} ${ing(m[2])}`,
     clue: 'Depois desse verbo não se usa "to".',
     explain: 'Enjoy, finish, avoid, keep, suggest pedem -ing: "I enjoy working", "we finished testing".',
@@ -476,7 +478,7 @@ const RULES: Rule[] = [
   },
   {
     id: 'realize-do', cat: 'false-friend',
-    re: /\b(realize|realized) (a|the|my) (project|task|work|test|job)\b/gd,
+    re: /\b(realize|realized) (a|the|my) (project|task|work|test|job)\b(?! (?:was|is|were|had|has|would|will|needed|did|didn't|wasn't|isn't))/gd,
     fix: (m) => `${m[1] === 'realize' ? 'carry out' : 'carried out'} ${m[2]} ${m[3]}`,
     clue: 'Falso cognato: "realize" não é "realizar".',
     explain: '"Realize" = perceber. "Realizar um projeto" = "carry out / do a project".',
@@ -541,8 +543,8 @@ const RULES: Rule[] = [
   },
   {
     id: 'for-me-is', cat: 'missing-subject',
-    re: /\bfor (me|us|him|her|them) (is|was)\b/gd,
-    fix: (m) => `for ${m[1]} it ${m[2]}`,
+    re: mk(r`${START_STRICT}(for (me|us|him|her|them) (is|was))\b`), g: 1,
+    fix: (m) => `for ${m[2]} it ${m[3]}`,
     clue: 'Depois de "for me" ainda falta o sujeito do verbo.',
     explain: '"Para mim é difícil" = "For me, it is difficult".',
   },

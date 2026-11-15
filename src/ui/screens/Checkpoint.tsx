@@ -34,7 +34,10 @@ export function CheckpointScreen({ go }: { go: (r: Route) => void }) {
 
   useEffect(() => () => stopAudio(), []);
 
+  const finishing = useRef(false);
   const finish = async (all: ItemResult[], allFree: FreeResult[]) => {
+    if (finishing.current) return;
+    finishing.current = true;
     setPhase('scoring');
     let r = summarize(form.id, all, allFree, { at: Date.now(), day: today, week });
     if (llmAvailable()) {
@@ -43,7 +46,7 @@ export function CheckpointScreen({ go }: { go: (r: Route) => void }) {
       if (j) r = applyJudgement(r, j.accepted, j.rubric);
     }
     store.set((s) => ({ ...s, checkpoints: [...s.checkpoints, r], plan: { startDay: s.plan.startDay ?? today } }));
-    store.logDay({ spokenSec: allFree.reduce((a, f) => a + f.ms, 0) / 1000 + all.filter((x) => x.spoken && x.said).reduce((a, x) => a + (x.totalMs - x.thinkMs), 0) / 1000, spoken: all.filter((x) => x.spoken && x.said).length });
+    store.logDay({ spokenSec: allFree.filter((f) => f.words > 0).reduce((a, f) => a + Math.min(f.ms, FREE_SECONDS * 1000), 0) / 1000 + all.filter((x) => x.spoken && x.said).reduce((a, x) => a + (x.totalMs - x.thinkMs), 0) / 1000, spoken: all.filter((x) => x.spoken && x.said).length });
     store.gainXp(50);
     setResult(r);
     setPhase('result');
@@ -59,6 +62,7 @@ export function CheckpointScreen({ go }: { go: (r: Route) => void }) {
     }
   };
   const answerFree = (res: FreeResult) => {
+    if (finishing.current) return;
     const all = [...free, res];
     setFree(all);
     if (all.length < form.prompts.length) setI(i + 1);
@@ -106,7 +110,7 @@ export function CheckpointScreen({ go }: { go: (r: Route) => void }) {
           {phase === 'items' ? (
             <ItemStep key={form.items[i].id} pt={form.items[i].pt} voice={useVoice} onDone={(said, timing, spoken) => answerItem(scoreItem(form.items[i], said, timing, spoken))} />
           ) : (
-            <FreeStep key={free.length} prompt={form.prompts[free.length]} voice={useVoice} onDone={(text, ms) => answerFree(scoreFree(form.prompts[free.length].en, text, ms))} />
+            <FreeStep key={free.length} prompt={form.prompts[free.length]} voice={useVoice} onDone={(text, ms) => answerFree(scoreFree(form.prompts[free.length].en, text, ms, FREE_SECONDS * 1000))} />
           )}
         </main>
       </div>
@@ -120,7 +124,8 @@ export function CheckpointScreen({ go }: { go: (r: Route) => void }) {
       </main>
     );
 
-  return <CheckpointReport result={result} history={store.state.checkpoints} onContinue={() => go({ name: 'evolution' })} />;
+  const first = store.state.checkpoints.length <= 1;
+  return <CheckpointReport result={result} history={store.state.checkpoints} continueLabel={first ? 'Seguir para o roteiro de hoje' : 'Ver minha evolução'} onContinue={() => go(first ? { name: 'home' } : { name: 'evolution' })} />;
 }
 
 function ItemStep({ pt, voice, onDone }: { pt: string; voice: boolean; onDone: (said: string, timing: { totalMs: number; thinkMs: number }, spoken: boolean) => void }) {
@@ -195,7 +200,7 @@ function FreeStep({ prompt, voice, onDone }: { prompt: { en: string; pt: string 
 
 const sign = (n: number, digits = 0) => `${n > 0 ? '+' : n < 0 ? '−' : '±'}${Math.abs(n).toFixed(digits).replace(/\.?0+$/, '') || '0'}`;
 
-export function CheckpointReport({ result, history, onContinue }: { result: CheckpointResult; history: CheckpointResult[]; onContinue?: () => void }) {
+export function CheckpointReport({ result, history, onContinue, continueLabel = 'Ver minha evolução' }: { result: CheckpointResult; history: CheckpointResult[]; onContinue?: () => void; continueLabel?: string }) {
   const idx = history.findIndex((c) => c.id === result.id);
   const base = history[0] && history[0].id !== result.id ? history[0] : null;
   const prev = idx > 0 ? history[idx - 1] : null;
@@ -204,6 +209,7 @@ export function CheckpointReport({ result, history, onContinue }: { result: Chec
   const prevCats = prev ? Object.fromEntries(prev.items.map((x) => [x.cat, x.verdict !== 'wrong'])) : null;
   return (
     <main className="shell checkpoint" id="main">
+      <h1 className="sr-only">Resultado do checkpoint de fala</h1>
       <span className="ex-kicker">Resultado · {result.day} · semana {result.week} · forma {result.form} · {result.modality}</span>
       <div className="cp-hero">
         <div>
@@ -275,8 +281,8 @@ export function CheckpointReport({ result, history, onContinue }: { result: Chec
         ))}
       </section>
 
-      <p className="fine">Como o índice é calculado: 45% precisão, 25% velocidade, 30% fluência, com faixas fixas. As 12 frases nunca aparecem nas aulas e as formas A a F se revezam. É uma medida interna consistente, não um certificado.</p>
-      {onContinue && <button className="btn btn-primary" onClick={onContinue}>Ver minha evolução</button>}
+      <p className="fine">Como o índice é calculado: 45% precisão, 25% velocidade (só nas frases certas), 30% fluência (palavras na janela inteira de 45 s), com faixas fixas. As 12 frases nunca aparecem nas aulas e as formas A a F se revezam. É uma medida interna consistente, não um certificado.</p>
+      {onContinue && <button className="btn btn-primary" onClick={onContinue}>{continueLabel}</button>}
     </main>
   );
 }

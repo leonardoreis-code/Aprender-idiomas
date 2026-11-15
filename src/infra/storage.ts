@@ -98,6 +98,7 @@ export interface AppState {
 }
 
 const KEY = 'fluente:v1';
+export const STATE_KEY = KEY;
 
 export const defaultState = (): AppState => ({
   version: 1,

@@ -64,11 +64,11 @@ export function LineChart({ points, unit = '', yMin, yMax, height = 150, title, 
   return (
     <figure className="chart">
       <div className="chart-plot" onMouseLeave={() => setActive(null)}>
-        <svg viewBox={`0 0 ${W} ${height}`} width="100%" role="img" aria-label={`${title}: ${data.map((d) => `${d.label} ${fmt(d.value)}${unit}`).join(', ')}`}>
+        <svg viewBox={`0 0 ${W} ${height}`} width="100%" role="group" aria-label={`${title}: ${data.map((d) => `${d.label} ${fmt(d.value)}${unit}`).join(', ')}`}>
           {ticks.map((t, k) => (
             <g key={k}>
               <line x1={PAD.l} x2={W - PAD.r} y1={y(t)} y2={y(t)} stroke="var(--line)" strokeWidth="1" />
-              <text x={PAD.l - 6} y={y(t) + 4} textAnchor="end" fontSize="10" fill="var(--ink-3)">{fmt(t)}</text>
+              <text x={PAD.l - 6} y={y(t) + 4} textAnchor="end" fontSize="12" fill="var(--ink-3)">{fmt(t)}</text>
             </g>
           ))}
           {act && <line x1={x(act.i)} x2={x(act.i)} y1={PAD.t} y2={height - PAD.b} stroke="var(--ink-3)" strokeWidth="1" strokeDasharray="3 3" />}
@@ -77,15 +77,15 @@ export function LineChart({ points, unit = '', yMin, yMax, height = 150, title, 
             <circle key={d.i} cx={x(d.i)} cy={y(d.value)} r={act?.i === d.i ? 6 : 4} fill="var(--viz-1)" stroke="var(--surface)" strokeWidth="2" />
           ))}
           {last && !act && (
-            <text x={Math.min(x(last.i) + 8, W - 2)} y={y(last.value) + 4} fontSize="11" fontWeight="700" fill="var(--ink)" textAnchor={x(last.i) + 8 > W - 28 ? 'end' : 'start'} dy={x(last.i) + 8 > W - 28 ? -10 : 0}>
+            <text x={Math.min(x(last.i) + 8, W - 2)} y={y(last.value) + 4} fontSize="13" fontWeight="700" fill="var(--ink)" textAnchor={x(last.i) + 8 > W - 28 ? 'end' : 'start'} dy={x(last.i) + 8 > W - 28 ? -10 : 0}>
               {fmt(last.value)}{unit}
             </text>
           )}
-          <text x={x(0)} y={height - 8} fontSize="10" fill="var(--ink-3)" textAnchor="start">{points[0].label}</text>
-          {points.length > 1 && <text x={x(points.length - 1)} y={height - 8} fontSize="10" fill="var(--ink-3)" textAnchor="end">{points[points.length - 1].label}</text>}
+          <text x={x(0)} y={height - 8} fontSize="12" fill="var(--ink-3)" textAnchor="start">{points[0].label}</text>
+          {points.length > 1 && <text x={x(points.length - 1)} y={height - 8} fontSize="12" fill="var(--ink-3)" textAnchor="end">{points[points.length - 1].label}</text>}
           {/* alvos de hover maiores que o marcador */}
           {data.map((d) => (
-            <rect key={d.i} x={x(d.i) - (W - PAD.l - PAD.r) / n / 2} y={0} width={(W - PAD.l - PAD.r) / n} height={height} fill="transparent" tabIndex={0}
+            <rect key={d.i} x={x(d.i) - (W - PAD.l - PAD.r) / n / 2} y={0} width={(W - PAD.l - PAD.r) / n} height={height} fill="transparent" tabIndex={0} role="img"
               aria-label={`${d.label}: ${fmt(d.value)}${unit}`} onMouseEnter={() => setActive(d.i)} onFocus={() => setActive(d.i)} onBlur={() => setActive(null)} />
           ))}
         </svg>
@@ -137,17 +137,17 @@ export function StackedBars({ data, names, unit = '', target, height = 170, titl
         {target !== undefined && <span><i className="dash" />meta da semana</span>}
       </div>
       <div className="chart-plot" onMouseLeave={() => setActive(null)}>
-        <svg viewBox={`0 0 ${W} ${height}`} width="100%" role="img" aria-label={`${title}: ${data.map((d) => `${d.label}: ${names[0]} ${fmt(d.a)}, ${names[1]} ${fmt(d.b)}`).join('; ')}`}>
+        <svg viewBox={`0 0 ${W} ${height}`} width="100%" role="group" aria-label={`${title}: ${data.map((d) => `${d.label}: ${names[0]} ${fmt(d.a)}, ${names[1]} ${fmt(d.b)}`).join('; ')}`}>
           {[0, max / 2, max].map((t, k) => (
             <g key={k}>
               <line x1={PAD.l} x2={W - PAD.r} y1={y(t)} y2={y(t)} stroke="var(--line)" strokeWidth="1" />
-              <text x={PAD.l - 6} y={y(t) + 4} textAnchor="end" fontSize="10" fill="var(--ink-3)">{fmt(Math.round(t))}</text>
+              <text x={PAD.l - 6} y={y(t) + 4} textAnchor="end" fontSize="12" fill="var(--ink-3)">{fmt(Math.round(t))}</text>
             </g>
           ))}
           {target !== undefined && (
             <g>
               <line x1={PAD.l} x2={W - PAD.r} y1={y(target)} y2={y(target)} stroke="var(--ink-2)" strokeWidth="1.5" strokeDasharray="5 4" />
-              <text x={W - PAD.r + 4} y={y(target) + 4} fontSize="10" fill="var(--ink-2)">{fmt(target)}</text>
+              <text x={W - PAD.r + 4} y={y(target) + 4} fontSize="12" fill="var(--ink-2)">{fmt(target)}</text>
             </g>
           )}
           {data.map((d, i) => {
@@ -159,8 +159,8 @@ export function StackedBars({ data, names, unit = '', target, height = 170, titl
               <g key={i} opacity={active === null || active === i ? 1 : 0.55}>
                 {d.a > 0 && (onlyA ? <path d={topRounded(cx, base, ya)} fill="var(--viz-1)" /> : <rect x={cx - bw / 2} y={ya} width={bw} height={base - ya} fill="var(--viz-1)" />)}
                 {d.b > 0 && <path d={topRounded(cx, ya - (d.a > 0 ? 2 : 0), yb - (d.a > 0 ? 2 : 0))} fill="var(--viz-2)" />}
-                {(i === 0 || i === data.length - 1 || active === i) && <text x={cx} y={height - 8} fontSize="10" fill="var(--ink-3)" textAnchor="middle">{d.label}</text>}
-                <rect x={cx - band / 2} y={0} width={band} height={height} fill="transparent" tabIndex={0}
+                {(i === 0 || i === data.length - 1 || active === i) && <text x={cx} y={height - 8} fontSize="12" fill="var(--ink-3)" textAnchor="middle">{d.label}</text>}
+                <rect x={cx - band / 2} y={0} width={band} height={height} fill="transparent" tabIndex={0} role="img"
                   aria-label={`${d.label}: ${names[0]} ${fmt(d.a)}${unit}, ${names[1]} ${fmt(d.b)}${unit}`} onMouseEnter={() => setActive(i)} onFocus={() => setActive(i)} onBlur={() => setActive(null)} />
               </g>
             );
@@ -183,7 +183,7 @@ export function DataTable({ head, rows, summary = 'Ver como tabela' }: { head: s
   return (
     <details className="chart-table">
       <summary>{summary}</summary>
-      <div className="table-wrap">
+      <div className="table-wrap" tabIndex={0} role="region" aria-label="Tabela de dados">
         <table>
           <thead><tr>{head.map((h) => <th key={h}>{h}</th>)}</tr></thead>
           <tbody>{rows.map((r, i) => <tr key={i}>{r.map((c, j) => <td key={j}>{c}</td>)}</tr>)}</tbody>

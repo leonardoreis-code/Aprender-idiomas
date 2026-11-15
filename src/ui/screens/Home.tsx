@@ -83,7 +83,7 @@ export function Home({ course, state, dueCount, onOpenLesson, onReview, onSettin
           <section className="unit" key={u.id} aria-labelledby={`h-${u.id}`}>
             <div className="unit-head">
               <h2 id={`h-${u.id}`}>{u.title}</h2>
-              <span className="cefr" style={{ background: u.color }}>{u.cefr}</span>
+              <span className="cefr" style={{ borderColor: u.color }}>{u.cefr}</span>
             </div>
             <MetroMap unit={u} stateOf={stateOf} onOpen={onOpenLesson} />
           </section>

@@ -21,7 +21,7 @@ export function Course({ go }: { go: (r: Route) => void }) {
                 <p className="muted">{t.desc}</p>
               </div>
               <div className="track-meta">
-                <span className="cefr" style={{ background: t.color }}>{t.level}</span>
+                <span className="cefr" style={{ borderColor: t.color }}>{t.level}</span>
                 <small className="muted">{done}/{t.lessons.length} aulas</small>
               </div>
             </header>

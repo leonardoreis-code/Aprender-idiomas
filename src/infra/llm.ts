@@ -9,6 +9,11 @@ import { goalMet, type Mission } from '../domain/sim/engine';
 
 export const llmAvailable = () => !!caps.sample;
 
+/** Próximo índice livre de "Minhas frases": o maior existente, não a quantidade (remover abre buraco). */
+export function nextMineIndex(custom: { id: string }[]): number {
+  return custom.reduce((max, d) => Math.max(max, Number(/^mine-d(\d+)$/.exec(d.id)?.[1] ?? 0)), 0);
+}
+
 async function askJson<T>(prompt: string, tier: 'quick' | 'default' = 'default'): Promise<T | null> {
   const s = caps.sample;
   if (!s) return null;

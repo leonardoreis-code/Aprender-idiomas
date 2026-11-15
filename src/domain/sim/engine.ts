@@ -62,7 +62,10 @@ export function goalMet(goal: Goal, text: string): boolean {
 export const goalsMet = (goals: Goal[], text: string): string[] => goals.filter((g) => goalMet(g, text)).map((g) => g.id);
 
 /** Pedir para repetir é uma estratégia real de conversa: o personagem repete, sem punição. */
-export const asksRepeat = (text: string) => /\b(repeat|say (that|it) again|come again|pardon|slower|more slowly|speak slowly|didn't (understand|catch|get|hear)|did not (understand|catch|get|hear)|don't understand|do not understand|what did you say)\b/i.test(text);
+const REPEAT_STRONG = /\b((can|could|would) you (please )?(repeat|say that again|say it again|speak (more )?slowly)|say (that|it) again|come again|pardon( me)?|what did you say|sorry\?|(more )?slowly,? please)\b/i;
+const REPEAT_WEAK = /\b(repeat|didn't (understand|catch|get|hear)|did not (understand|catch|get|hear)|don't understand|do not understand)\b/i;
+/** Fala curta pedindo repetição. "I didn't get the data from the API" é resposta, não pedido. */
+export const asksRepeat = (text: string) => REPEAT_STRONG.test(text) || (REPEAT_WEAK.test(text) && text.trim().split(/\s+/).length <= 6);
 
 export interface SimState {
   beat: number;

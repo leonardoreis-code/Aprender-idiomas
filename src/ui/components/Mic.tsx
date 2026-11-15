@@ -15,11 +15,15 @@ export function MicButton({ onResult, maxMs = 12000, autoStart = false, disabled
 }) {
   const [state, setState] = useState<'idle' | 'rec' | 'processing'>('idle');
   const [lvl, setLvl] = useState(0);
+  /** Falha de microfone não pode ser silenciosa: o aluno acha que falou e "errou". */
+  const [err, setErr] = useState('');
   const active = useRef<ActiveRecording | null>(null);
+  const mounted = useRef(true);
   const raf = useRef(0);
 
   const start = async () => {
     if (state !== 'idle') return;
+    setErr('');
     setState('rec');
     try {
       const rec = await startRecording({ maxMs });
@@ -31,12 +35,17 @@ export function MicButton({ onResult, maxMs = 12000, autoStart = false, disabled
       tick();
       const result = await rec.done;
       cancelAnimationFrame(raf.current);
+      if (!mounted.current) return;
       setLvl(0);
       setState('idle');
       active.current = null;
+      if (!result.text?.trim()) setErr('Não ouvi nada. Fale mais perto do microfone ou confira se ele está ligado.');
       onResult(result);
     } catch {
+      cancelAnimationFrame(raf.current);
+      setLvl(0);
       setState('idle');
+      setErr('Não consegui usar o microfone. Libere a permissão no navegador (ícone ao lado do endereço) e toque de novo.');
     }
   };
   const stop = () => {
@@ -46,8 +55,10 @@ export function MicButton({ onResult, maxMs = 12000, autoStart = false, disabled
   };
 
   useEffect(() => {
+    mounted.current = true;
     if (autoStart) void start();
     return () => {
+      mounted.current = false;
       cancelAnimationFrame(raf.current);
       active.current?.stop();
     };
@@ -72,8 +83,9 @@ export function MicButton({ onResult, maxMs = 12000, autoStart = false, disabled
         )}
       </button>
       <span role="status" style={{ color: 'var(--ink-2)', minHeight: 22, fontSize: '.95rem' }}>
-        {state === 'rec' ? 'Gravando… toque para parar' : state === 'processing' ? 'Analisando sua fala…' : 'Toque e fale'}
+        {state === 'rec' ? 'Gravando… toque para parar' : state === 'processing' ? 'Analisando sua fala…' : err ? '' : 'Toque e fale'}
       </span>
+      {err && state === 'idle' && <span role="alert" className="mic-err">{err}</span>}
     </div>
   );
 }

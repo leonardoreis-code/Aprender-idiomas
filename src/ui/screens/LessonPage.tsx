@@ -87,7 +87,7 @@ function Block({ b }: { b: ArticleBlock }) {
       );
     case 'table':
       return (
-        <div className="table-wrap">
+        <div className="table-wrap" tabIndex={0} role="region" aria-label="Tabela">
           <table>
             <thead><tr>{b.head.map((h, k) => <th key={k}>{h}</th>)}</tr></thead>
             <tbody>{b.rows.map((r, k) => <tr key={k}>{r.map((c, j) => <td key={j}>{c}</td>)}</tr>)}</tbody>

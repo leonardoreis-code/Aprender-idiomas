@@ -42,16 +42,32 @@ const NUMBER_WORDS: Record<string, string> = {
   '7': 'seven', '8': 'eight', '9': 'nine', '10': 'ten', '11': 'eleven', '12': 'twelve',
 };
 
+const TEENS = ['ten', 'eleven', 'twelve', 'thirteen', 'fourteen', 'fifteen', 'sixteen', 'seventeen', 'eighteen', 'nineteen'];
+const TENS = ['', '', 'twenty', 'thirty', 'forty', 'fifty', 'sixty', 'seventy', 'eighty', 'ninety'];
+const ONES = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine'];
+/** 0–99 por extenso: o reconhecedor de fala escreve "20", o alvo pode dizer "twenty". */
+function upTo99(n: number): string {
+  if (n < 10) return ONES[n];
+  if (n < 20) return TEENS[n - 10];
+  return TENS[Math.floor(n / 10)] + (n % 10 ? ` ${ONES[n % 10]}` : '');
+}
+
 export function normalize(text: string): string {
   let t = text
     .toLowerCase()
     .replace(/[’‘`´]/g, "'")
+    .replace(/\ba\.m\./g, 'am')
+    .replace(/\bp\.m\./g, 'pm')
+    .replace(/%/g, ' percent')
+    .replace(/(\d):00\b/g, '$1')
+    .replace(/(\d):(\d\d)\b/g, '$1 $2')
+    .replace(/([a-z0-9])-(?=[a-z0-9])/g, '$1 ')
     .replace(/[.,!?;:"“”()]/g, ' ')
     .replace(/\s+/g, ' ')
     .trim();
   t = t
     .split(' ')
-    .map((w) => CONTRACTIONS[w] ?? NUMBER_WORDS[w] ?? w)
+    .map((w) => CONTRACTIONS[w] ?? NUMBER_WORDS[w] ?? (/^\d{1,2}$/.test(w) ? upTo99(+w) : w))
     .join(' ');
   return t.replace(/\bcan not\b/g, 'cannot');
 }
@@ -75,6 +91,20 @@ export function levenshtein(a: string, b: string): number {
 }
 
 export type Verdict = 'correct' | 'almost' | 'wrong';
+
+/** Pares que diferem por 1 letra mas são OUTRA palavra: isso é erro, não digitação. */
+const CONFUSABLE = new Set([
+  'there|three', 'where|were', 'bought|brought', 'after|alter', 'think|thing', 'quite|quiet', 'loose|lose',
+  'whole|while', 'these|those', 'desert|dessert', 'advice|advise', 'affect|effect', 'accept|except',
+  'through|though', 'thought|though', 'write|white', 'world|words', 'form|from', 'then|than', 'could|would',
+  'could|should', 'would|should', 'their|there', 'cloud|could', 'worse|worst', 'later|latter', 'start|stars',
+]);
+export function isConfusable(a: string, b: string): boolean {
+  return CONFUSABLE.has(`${a}|${b}`) || CONFUSABLE.has(`${b}|${a}`);
+}
+/** Erro de digitação: mesma primeira letra, 1 edição, e não vira outra palavra conhecida. */
+const isTypo = (target: string, got: string) =>
+  target.length >= 5 && got[0] === target[0] && levenshtein(target, got) <= 1 && !isInflection(target, got) && !isConfusable(target, got);
 
 /** "work" × "works" ou "like" × "liked" é erro de gramática, não de digitação. */
 export function isInflection(a: string, b: string): boolean {
@@ -100,7 +130,7 @@ export function checkTyped(input: string, accepted: string[]): Verdict {
     const gw = got.split(' ');
     const tw = target.split(' ');
     if (gw.length !== tw.length) continue;
-    const ok = tw.every((w, i) => w === gw[i] || (w.length >= 5 && levenshtein(w, gw[i]) <= 1 && !isInflection(w, gw[i])));
+    const ok = tw.every((w, i) => w === gw[i] || isTypo(w, gw[i]));
     if (ok) return 'almost';
   }
   return 'wrong';

@@ -35,9 +35,22 @@ export interface PlayOptions {
   onLevel?: (level: number) => void;
 }
 
+/** Geração da fala atual: parar invalida a fala em curso (sem cair para outra voz). */
+let gen = 0;
+/** Promise de `playFile` pendente: `pause()` não dispara `ended`, então parar resolve na mão. */
+let pendingResolve: (() => void) | null = null;
+
 export function stopAudio() {
+  gen++;
+  halt();
+}
+
+/** Para o que estiver tocando sem invalidar a fala em curso (usado ao trocar de arquivo). */
+function halt() {
   current?.pause();
   current = null;
+  pendingResolve?.();
+  pendingResolve = null;
   stopLevel?.();
   stopLevel = null;
   if ('speechSynthesis' in window) window.speechSynthesis.cancel();
@@ -76,7 +89,7 @@ function attachLevel(el: HTMLAudioElement, onLevel: (l: number) => void) {
 }
 
 export async function playFile(path: string, opts: PlayOptions = {}): Promise<void> {
-  stopAudio();
+  halt();
   const el = new Audio(path.startsWith('/') || path.startsWith('http') ? path : `${import.meta.env.BASE_URL}${path}`);
   el.crossOrigin = 'anonymous';
   el.playbackRate = opts.slow ? 0.8 : 1;
@@ -84,12 +97,15 @@ export async function playFile(path: string, opts: PlayOptions = {}): Promise<vo
   current = el;
   if (opts.onLevel) attachLevel(el, opts.onLevel);
   await new Promise<void>((resolve, reject) => {
+    pendingResolve = resolve;
     el.onended = () => resolve();
     el.onerror = () => reject(new Error('audio'));
     el.play().catch(reject);
   }).finally(() => {
-    stopLevel?.();
-    stopLevel = null;
+    if (current === el) {
+      stopLevel?.();
+      stopLevel = null;
+    }
   });
 }
 
@@ -97,6 +113,9 @@ const VOICE_NAMES = ['bella', 'daniel', 'matilda'];
 
 export async function speak(text: string, opts: PlayOptions = {}): Promise<void> {
   const lang = opts.lang ?? 'en';
+  // fala interrompida (stopAudio) termina aqui: não repete a frase com outra voz
+  const my = ++gen;
+  const stopped = () => gen !== my;
   if (lang === 'en') {
     const m = await loadManifest();
     const files = m[audioKey(text)];
@@ -104,24 +123,27 @@ export async function speak(text: string, opts: PlayOptions = {}): Promise<void>
       try {
         return await playFile(files[(opts.variant ?? 0) % files.length], opts);
       } catch {
-        /* cai para o próximo */
+        if (stopped()) return;
       }
     }
   }
+  if (stopped()) return;
   if (isArtifact && caps.tts) {
     try {
       return await artifactTts(text, opts);
     } catch {
       /* sem gesto do usuário ou limite: cai para a voz do sistema */
+      if (stopped()) return;
     }
   }
   const h = await health();
+  if (stopped()) return;
   if (h.tts) {
     try {
       const voice = lang === 'pt' ? 'matilda' : VOICE_NAMES[(opts.variant ?? 0) % VOICE_NAMES.length];
       return await playFile(ttsUrl(text, voice, lang), opts);
     } catch {
-      /* fallback */
+      if (stopped()) return;
     }
   }
   return synth(text, opts);

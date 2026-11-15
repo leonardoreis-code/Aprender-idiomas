@@ -34,7 +34,7 @@ export function Onboarding({ onDone }: { onDone: (r: OnboardingResult) => void }
   const finish = (placementHits: boolean[]) => {
     const score = placementHits.filter(Boolean).length;
     const level: LearnerLevel = self === 'zero' && score <= 1 ? 'zero' : score >= 5 ? 'avancado' : score >= 2 || self !== 'zero' ? 'fala' : 'zero';
-    onDone({ name: name.trim(), level, goals, minutes, dailyGoal: minutes <= 10 ? 30 : minutes <= 15 ? 50 : 100 });
+    onDone({ name: name.trim(), level, goals, minutes, dailyGoal: minutes <= 15 ? 50 : minutes <= 30 ? 100 : 150 });
   };
 
   const goalOpts: { id: Goal; label: string }[] = [
@@ -88,8 +88,9 @@ export function Onboarding({ onDone }: { onDone: (r: OnboardingResult) => void }
           <fieldset style={{ border: 0, padding: 0 }}>
             <legend style={{ fontWeight: 700, marginBottom: 8 }}>Quanto tempo por dia?</legend>
             <div className="seg" role="group">
-              {[10, 15, 25].map((m) => <button key={m} aria-pressed={minutes === m} onClick={() => setMinutes(m)}>{m} min</button>)}
+              {[15, 30, 60].map((m) => <button key={m} aria-pressed={minutes === m} onClick={() => setMinutes(m)}>{m} min</button>)}
             </div>
+            <p className="fine" style={{ marginTop: 8 }}>Sendo honesto: para destravar a fala em 6 meses, conte com perto de 1 hora por dia, metade dela falando.</p>
           </fieldset>
           <button className="btn btn-primary btn-block" disabled={!goals.length} onClick={() => setStep(self === 'zero' ? 4 : 3)}>{self === 'zero' ? 'Começar' : 'Fazer nivelamento (1 min)'}</button>
         </>

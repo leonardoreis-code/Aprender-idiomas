@@ -85,9 +85,13 @@ export function scoreItem(item: CheckItem, said: string, timing: { totalMs: numb
   };
 }
 
-export function scoreFree(prompt: string, text: string, ms: number): FreeResult {
+/**
+ * `windowMs`: janela mínima da medida. No checkpoint a fala livre vale pela janela
+ * inteira (45 s): parar cedo ou digitar 10 palavras em 3 s não vira "fluência alta".
+ */
+export function scoreFree(prompt: string, text: string, ms: number, windowMs = 0): FreeResult {
   const tokens = normalize(text).split(' ').filter(Boolean);
-  const minutes = Math.max(ms, 1000) / 60000;
+  const minutes = Math.max(ms, windowMs, 1000) / 60000;
   return {
     prompt,
     text,
@@ -126,7 +130,9 @@ export function summarize(
   const points = items.reduce((a, r) => a + (r.verdict === 'correct' ? 1 : r.verdict === 'almost' ? 0.8 : 0), 0);
   const accuracy = items.length ? points / items.length : 0;
   const answered = items.filter((r) => r.said.trim());
-  const secPerWord = Math.round(median(answered.map((r) => r.totalMs / 1000 / r.words)) * 100) / 100;
+  // velocidade só conta em frase CERTA: responder rápido e errado não é automaticidade
+  const right = items.filter((r) => r.verdict !== 'wrong');
+  const secPerWord = Math.round(median(right.map((r) => r.totalMs / 1000 / r.words)) * 100) / 100;
   const thinkSec = Math.round(median(answered.map((r) => r.thinkMs / 1000)) * 10) / 10;
   const spokenFree = free.filter((f) => f.words > 0);
   const wpm = spokenFree.length ? Math.round(spokenFree.reduce((a, f) => a + f.wpm, 0) / spokenFree.length) : 0;

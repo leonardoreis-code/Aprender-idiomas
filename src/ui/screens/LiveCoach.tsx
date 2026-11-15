@@ -49,7 +49,12 @@ export function LiveCoach({ go, lessonId, scenarioId }: { go: (r: Route) => void
     [lesson],
   );
   const [scenario, setScenario] = useState<Scenario | null>(lessonScenario ?? SCENARIOS.find((s) => s.id === scenarioId) ?? null);
-  const [phase, setPhase] = useState<Phase>(scenario ? 'idle' : 'pick');
+  const [phase, setPhaseRaw] = useState<Phase>(scenario ? 'idle' : 'pick');
+  /** Depois de "Encerrar", nenhum resultado atrasado (ditado, IA) tira o aluno do resumo. */
+  const ended = useRef(false);
+  const setPhase = (p: Phase) => {
+    if (!ended.current) setPhaseRaw(p);
+  };
   const [question, setQuestion] = useState<{ en: string; pt?: string } | null>(scenario ? scenario.questions[0] : null);
   const [qi, setQi] = useState(0);
   const [liveText, setLiveText] = useState('');
@@ -126,6 +131,7 @@ export function LiveCoach({ go, lessonId, scenarioId }: { go: (r: Route) => void
     session.current = s;
     void s.done.then(({ text, ms, pauses }) => {
       session.current = null;
+      if (ended.current) return;
       if (text.trim() && ms > 4000) store.logDay({ pauses, pauseMin: ms / 60000 });
       if (!text.trim()) {
         setNote('Não ouvi nada. Toque no microfone e tente de novo, ou responda digitando.');
@@ -272,13 +278,16 @@ export function LiveCoach({ go, lessonId, scenarioId }: { go: (r: Route) => void
     ask({ en: `${REACTIONS[st.turns % REACTIONS.length]} ${q.en}`, pt: q.pt });
   };
   const finish = () => {
+    if (ended.current) return;
+    ended.current = true;
+    session.current?.stop();
     stopAudio();
     const secs = Math.round((Date.now() - startedAt.current) / 1000);
     store.logDay({ mayaSec: secs });
     store.set((s) => ({ ...s, teacherSeconds: s.teacherSeconds + secs, lessons: lesson ? { ...s.lessons, [lesson.id]: { ...s.lessons[lesson.id], teacher: true } } : s.lessons }));
     store.track('teacherMin', Math.floor(secs / 60));
     store.gainXp(Math.min(80, stats.current.turns * 8 + stats.current.records.filter((r) => r.level <= 3).length * 6));
-    setPhase('summary');
+    setPhaseRaw('summary');
   };
 
   const submitTyped = (onDone: (t: string, ms: number) => void) => {

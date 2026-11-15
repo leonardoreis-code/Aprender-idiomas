@@ -9,7 +9,7 @@ import { ERROR_CATEGORIES } from '../../domain/production/errors';
 import { fill, goalsMet, initialSim, nextGoal, react, score, type Goal, type Mission, type SimState } from '../../domain/sim/engine';
 import { speak, stopAudio } from '../../infra/audio';
 import { liveAvailable, startLive, type LiveSession } from '../../infra/live';
-import { howToSay, llmAvailable, makeMission, simTurn } from '../../infra/llm';
+import { howToSay, llmAvailable, makeMission, nextMineIndex, simTurn } from '../../infra/llm';
 import { isArtifact } from '../../infra/platform';
 import { sfxComplete, sfxCorrect, sfxTap } from '../../infra/sfx';
 import { BackIcon, BulbIcon, CheckIcon, MicIcon, SpeakerIcon } from '../icons/ui';
@@ -25,8 +25,10 @@ function lookup(pt: string): string | null {
   const k = strip(pt);
   if (!k) return null;
   if (ALL_WORDS[k]) return ALL_WORDS[k];
-  const hit = Object.keys(ALL_WORDS).find((key) => k.startsWith(key) || key.startsWith(k));
-  return hit && Math.abs(hit.length - k.length) <= 3 ? ALL_WORDS[hit] : null;
+  // prefixo só para buscas longas e sem cortar palavra ("que" não é "queda"): o resto vai para o Claude
+  if (k.length < 5) return null;
+  const hit = Object.keys(ALL_WORDS).find((key) => key.length >= 5 && (k === key + 's' || key === k + 's' || (k.startsWith(key) && k.length - key.length <= 2)));
+  return hit ? ALL_WORDS[hit] : null;
 }
 
 const Stars = ({ n, size = 18 }: { n: number; size?: number }) => (
@@ -309,7 +311,13 @@ export function MissionPlayer({ id, go }: { id: string; go: (r: Route) => void }
   const reveal = (b: number, i: number) => setBubbles((bs) => bs.map((x, k) => (k === b ? { ...x, issues: x.issues.map((y, j) => (j === i ? { ...y, revealed: true } : y)) } : x)));
 
   const issuesCount = bubbles.reduce((a, b) => a + b.issues.length, 0);
+  const finished = useRef(false);
   const finish = () => {
+    // "Encerrar" durante a fala final + o fim do áudio chamariam duas vezes (XP e minutos em dobro)
+    if (finished.current) return;
+    finished.current = true;
+    session.current?.stop();
+    stopAudio();
     const secs = Math.round((Date.now() - startedAt.current) / 1000);
     const sc = score(mission, simRef.current.met, stat.current.helps, bubblesRef.current.reduce((a, b) => a + b.issues.length, 0));
     store.logDay({ mayaSec: secs });
@@ -341,7 +349,7 @@ export function MissionPlayer({ id, go }: { id: string; go: (r: Route) => void }
   const addDrills = () => {
     store.set((s) => {
       const have = new Set(s.custom.map((d) => d.en));
-      const fresh: Drill[] = mission.goals.filter((g) => !have.has(g.example)).map((g, k) => ({ id: `mine-d${String(s.custom.length + k + 1).padStart(3, '0')}`, pt: g.pt, en: g.example, chunks: [{ pt: g.pt.replace(/[.!?]+$/, ''), en: g.example.replace(/[.!?]+$/, '') }], hint: g.label }));
+      const fresh: Drill[] = mission.goals.filter((g) => !have.has(g.example)).map((g, k) => ({ id: `mine-d${String(nextMineIndex(s.custom) + k + 1).padStart(3, '0')}`, pt: g.pt, en: g.example, chunks: [{ pt: g.pt.replace(/[.!?]+$/, ''), en: g.example.replace(/[.!?]+$/, '') }], hint: g.label }));
       return { ...s, custom: [...s.custom, ...fresh] };
     });
     setAdded(true);
@@ -429,7 +437,7 @@ export function MissionPlayer({ id, go }: { id: string; go: (r: Route) => void }
   return (
     <main className="shell mission talk" id="main">
       <div className="row-between">
-        <button className="link-btn back" onClick={() => (sim.turns ? finish() : go({ name: 'missions' }))}><BackIcon /> {sim.turns ? 'Encerrar' : 'Voltar'}</button>
+        <button className="link-btn back" onClick={() => (sim.turns ? (sim.done ? undefined : finish()) : go({ name: 'missions' }))} disabled={sim.done}><BackIcon /> {sim.turns ? 'Encerrar' : 'Voltar'}</button>
         <small className="muted">{mission.title}</small>
       </div>
 

@@ -127,7 +127,7 @@ h1, h2, h3 { font-family: var(--font-display); font-weight: 600; letter-spacing:
 .unit { margin-top: 28px; }
 .unit-head { display: flex; align-items: baseline; gap: 10px; margin-bottom: 4px; }
 .unit-head h2 { font-size: 1.35rem; }
-.cefr { font-size: 0.75rem; font-weight: 700; padding: 2px 8px; border-radius: 6px; color: #fff; letter-spacing: 0.06em; }
+.cefr { font-size: 0.75rem; font-weight: 700; padding: 1px 8px; border-radius: 6px; color: var(--ink); background: var(--surface); border: 2px solid var(--line); letter-spacing: 0.06em; }
 .metro { width: 100%; height: auto; overflow: visible; }
 .station { cursor: pointer; }
 .station:focus-visible { outline: none; }
@@ -233,13 +233,13 @@ details summary { cursor: pointer; min-height: 32px; color: var(--ink-2); }
 
 /* ---------- Settings ---------- */
 .settings h1 { font-size: 1.8rem; margin: 22px 0 10px; }
-.setting { display: flex; align-items: center; gap: 12px; justify-content: space-between; padding: 14px 0; border-bottom: 1px solid var(--line); }
+.setting { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; justify-content: space-between; padding: 14px 0; border-bottom: 1px solid var(--line); }
 .setting p { margin: 0; color: var(--ink-3); font-size: 0.9rem; }
 .switch { width: 58px; height: 34px; border-radius: 999px; border: 2px solid var(--line); background: var(--surface-2); position: relative; flex: none; }
 .switch::after { content: ''; position: absolute; top: 3px; left: 3px; width: 24px; height: 24px; border-radius: 50%; background: var(--ink-3); transition: transform 0.2s; }
 .switch[aria-checked='true'] { background: var(--teal); border-color: var(--teal); }
 .switch[aria-checked='true']::after { transform: translateX(24px); background: #fff; }
-.seg { display: inline-flex; border: 2px solid var(--line); border-radius: 12px; overflow: hidden; }
+.seg { display: inline-flex; flex-shrink: 0; border: 2px solid var(--line); border-radius: 12px; overflow: hidden; }
 .seg button { min-height: 44px; min-width: 52px; border: 0; background: var(--surface); padding: 0 10px; }
 .seg button[aria-pressed='true'] { background: var(--ink); color: var(--paper); }
 
@@ -301,7 +301,8 @@ button.tile:disabled { opacity: .55; transform: none; }
 .tile-title { font-family: var(--font-display); font-size: 1.25rem; line-height: 1.2; }
 .tile-main { grid-column: 1 / -1; background: var(--ink); color: var(--paper); border-color: var(--ink); }
 .tile-main .muted, .tile-main .ex-kicker { color: color-mix(in srgb, var(--paper) 75%, transparent); }
-.tile-cta { margin-top: 6px; font-weight: 700; color: var(--sticky); }
+.tile-cta { margin-top: 6px; font-weight: 700; color: var(--indigo); }
+.tile-main .tile-cta { color: var(--paper); text-decoration: underline; text-underline-offset: 3px; }
 .tile-teacher { grid-template-columns: auto 1fr; align-items: center; gap: 14px; }
 .tile-teacher > span { display: grid; gap: 4px; }
 .quests { gap: 12px; }
@@ -613,3 +614,16 @@ button.tile:disabled { opacity: .55; transform: none; }
 .sim-end { scroll-margin-bottom: 300px; height: 1px; }
 .sim-chat { padding-bottom: 12px; }
 @media (min-width: 700px) { .goal-hud { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+
+/* microfone: falha visível, nunca silenciosa */
+.mic-err { max-width: 34ch; text-align: center; color: var(--bad); font-weight: 600; font-size: .92rem; }
+/* fechar o ciclo falando depois de acertar escrevendo */
+.say-aloud { margin-top: 10px; padding: 10px 12px; border: 2px dashed currentColor; border-radius: 12px; display: grid; gap: 8px; justify-items: start; }
+.say-aloud .mic { width: 64px; height: 64px; }
+.dash-more { grid-column: 1 / -1; }
+.dash-more > summary { cursor: pointer; font-weight: 700; padding: 12px 4px; list-style: none; display: flex; align-items: center; gap: 8px; }
+.dash-more > summary::-webkit-details-marker { display: none; }
+.dash-more > summary::before { content: '+'; display: inline-grid; place-items: center; width: 26px; height: 26px; border-radius: 8px; border: 2px solid var(--line); }
+.dash-more[open] > summary::before { content: '−'; }
+.dash-more .dash-grid { margin-top: 8px; }
+.today-go { margin-top: 12px; }

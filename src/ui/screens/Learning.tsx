@@ -138,7 +138,7 @@ export function Pretest({ lesson }: { lesson: SpeakingLesson }) {
         <span className="ex-kicker">Antes e depois</span>
         <p style={{ margin: '4px 0 0' }}>
           Antes da aula você acertou <b>{p.pre} de {items.length}</b>.{' '}
-          {p.post !== undefined ? <>Depois da prática: <b>{p.post} de {items.length}</b>{p.post > p.pre ? '. Esse ganho é aprendizado medido.' : '.'}</> : 'Faça a prática para ver o depois.'}
+          {p.post !== undefined ? <>Depois da prática: <b>{p.post} de {items.length}</b>{p.post > p.pre ? '. Mesma tarefa, sem ajuda: esse ganho é real (de curto prazo; a revisão dirá se fica).' : '.'}</> : 'Faça a prática para ver o depois.'}
         </p>
       </section>
     );

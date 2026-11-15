@@ -16,7 +16,7 @@ await page.goto(URL);
 await page.evaluate(() => localStorage.setItem('fluente:v1', JSON.stringify({ onboarded: true, profile: { name: 'Leo', level: 'fala', goals: ['trabalho'], minutes: 25 } })));
 await page.goto(URL + '#inicio'); await page.reload(); await page.waitForTimeout(300);
 await page.screenshot({ path: `${OUT}/e1-home.png`, fullPage: true });
-await page.getByRole('button', { name: /checkpoint de fala/ }).click();
+await page.getByRole('button', { name: /Continuar: Checkpoint de fala/ }).click();
 await page.getByRole('checkbox').check();
 await page.screenshot({ path: `${OUT}/e2-intro.png` });
 await page.getByRole('button', { name: 'Começar o checkpoint' }).click();

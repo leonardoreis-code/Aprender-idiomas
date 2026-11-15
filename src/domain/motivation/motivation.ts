@@ -75,6 +75,9 @@ export function addXp(s: MotivationState, xp: number, today = dayKey()): XpResul
   let next: MotivationState = { ...s, xpTotal: s.xpTotal + xp, xpByDay: { ...s.xpByDay, [today]: after } };
   const goalJustMet = before < s.dailyGoal && after >= s.dailyGoal;
   if (goalJustMet && next.lastGoalDay !== today) {
+    // a aba pode ter ficado aberta: reconcilia antes de somar (dias perdidos zeram ou gastam proteção)
+    const { usedFreezes: _u, ...rec } = reconcileStreak(next, today);
+    next = { ...next, ...rec };
     const streak = next.streak + 1;
     const earnedFreeze = streak % 7 === 0 ? 1 : 0;
     next = {

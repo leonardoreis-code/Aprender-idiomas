@@ -3,7 +3,7 @@ import { allItems, englishCourse, findItem, findLesson } from './content/en/cour
 import { allDrills, drillsForErrors, findSpeakingLesson, stories, videoForLesson, videoLessons } from './content';
 import { buildLesson, buildReview } from './domain/practice/builder';
 import type { Exercise } from './domain/practice/types';
-import { buildErrorQueue, buildProductionQueue, firstTryAccuracy } from './domain/production/ladder';
+import { buildErrorQueue, buildProductionQueue, firstTryAccuracy, startStageFor } from './domain/production/ladder';
 import { errorProfile } from './domain/production/errors';
 import { dueItemIds } from './domain/srs/scheduler';
 import { completeSession, type SessionOutcome } from './application/completeSession';
@@ -202,24 +202,25 @@ function PracticeRoute({ lessonId, go }: { lessonId?: string; go: (r: Route) => 
   const store = useStore();
   const { production, custom, errorLog } = store.state;
   const lesson = lessonId ? findSpeakingLesson(lessonId) : undefined;
+  const startStage = startStageFor(store.state.profile.level);
   const mode = lesson ? 'lesson' : lessonId === 'erros' ? 'errors' : lessonId === 'minhas' ? 'mine' : lessonId === 'rapido' ? 'quick' : 'mix';
   const { queue, pool, title } = useMemo(() => {
-    if (lesson) return { title: lesson.title, pool: lesson.drills, queue: buildProductionQueue(lesson.drills, production, { max: 14, newLimit: 12, focusIds: lesson.drills.map((d) => d.id) }) };
+    if (lesson) return { title: lesson.title, pool: lesson.drills, queue: buildProductionQueue(lesson.drills, production, { max: 14, newLimit: 12, focusIds: lesson.drills.map((d) => d.id), startStage }) };
     if (mode === 'errors') {
       const top = errorProfile(errorLog.slice(0, 120)).slice(0, 3).map((e) => e.id);
       const drills = drillsForErrors(top);
-      return { title: 'Treino dos meus erros', pool: drills.length ? drills : allDrills, queue: buildErrorQueue(drills, production, 12) };
+      return { title: 'Treino dos meus erros', pool: drills.length ? drills : allDrills, queue: buildErrorQueue(drills, production, 12, startStage) };
     }
     if (mode === 'mine') {
-      const q = buildProductionQueue(custom, production, { max: 12, newLimit: 12 });
-      return { title: 'Minhas frases', pool: custom, queue: q.length ? q : buildErrorQueue(custom, production, 12) };
+      const q = buildProductionQueue(custom, production, { max: 12, newLimit: 12, startStage });
+      return { title: 'Minhas frases', pool: custom, queue: q.length ? q : buildErrorQueue(custom, production, 12, startStage) };
     }
     const started = new Set(Object.keys(production).map((id) => id.replace(/-d\d+$/, '')));
     const seen = allDrills.filter((d) => started.has(d.id.replace(/-d\d+$/, '')));
     const all = [...(seen.length ? seen : allDrills.slice(0, 12)), ...custom];
     // dia corrido: 5 frases, só o que está para ser esquecido
-    if (mode === 'quick') return { title: 'Dia corrido: 5 frases', pool: [...allDrills, ...custom], queue: buildProductionQueue(all, production, { max: 5, newLimit: 2 }) };
-    return { title: 'Pense em inglês', pool: [...allDrills, ...custom], queue: buildProductionQueue(all, production, { max: 12, newLimit: 4 }) };
+    if (mode === 'quick') return { title: 'Dia corrido: 5 frases', pool: [...allDrills, ...custom], queue: buildProductionQueue(all, production, { max: 5, newLimit: 2, startStage }) };
+    return { title: 'Pense em inglês', pool: [...allDrills, ...custom], queue: buildProductionQueue(all, production, { max: 12, newLimit: 4, startStage }) };
   }, [lessonId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!queue.length) {
@@ -245,8 +246,9 @@ function PracticeRoute({ lessonId, go }: { lessonId?: string; go: (r: Route) => 
           const acc = firstTryAccuracy(attempts);
           // as mesmas 3 frases do "Tente antes": quantas saíram certas de primeira agora
           const preIds = PRETEST_INDEXES.map((k) => lesson.drills[k]?.id);
+          // só vale comparar com o "antes" (escrito sem ajuda) se o "depois" também foi sem blocos
           const firstOk = new Map<string, boolean>();
-          for (const a of attempts) if (!firstOk.has(a.drillId)) firstOk.set(a.drillId, a.correct);
+          for (const a of attempts) if (!firstOk.has(a.drillId) && a.stage >= 2) firstOk.set(a.drillId, a.correct);
           const post = preIds.filter((id) => id && firstOk.get(id)).length;
           if (preIds.some((id) => id && firstOk.has(id))) store.set((s) => ({ ...s, lessons: { ...s.lessons, [lesson.id]: { ...s.lessons[lesson.id], post } } }));
           if (acc >= 0.7) {

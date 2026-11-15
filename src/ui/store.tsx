@@ -2,7 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import { addXp as addXpDomain, dayKey, reconcileStreak, unlockAchievements, type AchievementDef } from '../domain/motivation/motivation';
 import { bump, claimable, type QuestMetric } from '../domain/motivation/quests';
 import { applyProduction, type ProductionAttempt } from '../domain/production/ladder';
-import { loadState, saveState, type AppState } from '../infra/storage';
+import { loadState, saveState, STATE_KEY, type AppState } from '../infra/storage';
 import { addDay, type DayStats } from '../domain/progress/daily';
 import { addErrors as addToBank } from '../domain/coach/errorBank';
 import type { Issue } from '../domain/coach/mediation';
@@ -51,6 +51,14 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     saveState(state);
   }, [state]);
+  // outra aba salvou: adota o estado dela (senão esta aba, desatualizada, apagaria o progresso da outra)
+  useEffect(() => {
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === STATE_KEY && e.newValue) setState(loadState());
+    };
+    window.addEventListener('storage', onStorage);
+    return () => window.removeEventListener('storage', onStorage);
+  }, []);
   useEffect(() => {
     const root = document.documentElement;
     const s = state.settings;

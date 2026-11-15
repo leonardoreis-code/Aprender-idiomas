@@ -39,13 +39,16 @@ export const LEVEL_LABEL: Record<HelpLevel, string> = { 1: 'Aviso', 2: 'Onde', 3
 export const nextLevel = (l: HelpLevel): HelpLevel | null => (l < 4 ? ((l + 1) as HelpLevel) : null);
 
 /** A nova tentativa consertou o problema? */
+/** Contém a sequência de palavras inteiras (não substring: "ago" não contém "go"). */
+const hasWords = (text: string, words: string) => !!words && ` ${text} `.includes(` ${words} `);
+
 export function repaired(issue: Issue, attempt: string): boolean {
   const a = normalize(attempt);
   if (!a) return false;
   const fix = normalize(issue.fix);
   const wrong = normalize(issue.wrong);
-  if (fix && wrong !== fix && a.includes(wrong) && !fix.includes(wrong)) return false; // repetiu o erro
-  if (fix && a.includes(fix)) return true;
+  if (fix && wrong !== fix && hasWords(a, wrong) && !hasWords(fix, wrong)) return false; // repetiu o erro
+  if (fix && hasWords(a, fix)) return true;
   // regra local: o padrão deixou de aparecer e a pessoa não fugiu da frase
   if (issue.source === 'rule') {
     if (spot(attempt).some((s) => s.rule === issue.rule)) return false;

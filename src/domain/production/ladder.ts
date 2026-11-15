@@ -56,6 +56,14 @@ export function flashLimitMs(en: string): number {
   return Math.round(2500 + words * 650);
 }
 
+/**
+ * Degrau de entrada de uma frase nova. Quem entende inglês não precisa montar blocos:
+ * o gargalo é PRODUZIR, então começa escrevendo (fala) ou já falando (avançado).
+ */
+export function startStageFor(level: 'zero' | 'fala' | 'avancado'): Stage {
+  return level === 'zero' ? 0 : level === 'fala' ? 2 : 3;
+}
+
 export function nextStage(cur: Stage, a: Pick<ProductionAttempt, 'correct' | 'hesitant'>): Stage {
   if (!a.correct) return Math.max(0, cur - 1) as Stage;
   if (a.hesitant) return cur;
@@ -79,7 +87,8 @@ export function applyProduction(state: ProductionState, attempts: ProductionAtte
     let mastered = prev.mastered;
     for (const a of list) {
       if (a.correct && !a.hesitant && a.stage === 4) mastered++;
-      stage = nextStage(stage, a);
+      // o degrau que vale é o que foi apresentado (a frase nova pode entrar acima do 0)
+      stage = nextStage(a.stage ?? stage, a);
     }
     const worst = Math.min(...list.map(gradeProduction));
     const cards: CardMap = prev.card ? { [id]: prev.card } : {};
@@ -103,8 +112,9 @@ export interface QueueItem {
 export function buildProductionQueue(
   drills: Drill[],
   state: ProductionState,
-  opts: { max?: number; newLimit?: number; now?: Date; focusIds?: string[] } = {},
+  opts: { max?: number; newLimit?: number; now?: Date; focusIds?: string[]; startStage?: Stage } = {},
 ): QueueItem[] {
+  const startStage = opts.startStage ?? 0;
   const now = opts.now ?? new Date();
   const max = opts.max ?? 12;
   const newLimit = opts.newLimit ?? 6;
@@ -115,7 +125,7 @@ export function buildProductionQueue(
   for (const d of drills) {
     const p = state[d.id];
     if (!p) {
-      if (!focus || focus.has(d.id)) fresh.push({ drill: d, stage: 0, reason: 'new' });
+      if (!focus || focus.has(d.id)) fresh.push({ drill: d, stage: startStage, reason: 'new' });
       continue;
     }
     if (p.card && new Date(p.card.due).getTime() <= now.getTime()) due.push({ drill: d, stage: p.stage, reason: 'due' });
@@ -146,10 +156,10 @@ export function dueDrillCount(state: ProductionState, now = new Date()): number 
  * Treino dos meus erros: frases das aulas ligadas às categorias em que o aluno
  * mais erra. Prioriza frases já erradas e os degraus mais baixos.
  */
-export function buildErrorQueue(drills: Drill[], state: ProductionState, max = 12): QueueItem[] {
+export function buildErrorQueue(drills: Drill[], state: ProductionState, max = 12, startStage: Stage = 0): QueueItem[] {
   const scored = drills.map((d) => {
     const p = state[d.id];
-    return { d, stage: (p?.stage ?? 0) as Stage, score: (p?.lastErrors.length ?? 0) * 10 - (p?.stage ?? 0) * 2 + (p ? 1 : 0) };
+    return { d, stage: (p?.stage ?? startStage) as Stage, score: (p?.lastErrors.length ?? 0) * 10 - (p?.stage ?? 0) * 2 + (p ? 1 : 0) };
   });
   scored.sort((a, b) => b.score - a.score);
   return interleave(

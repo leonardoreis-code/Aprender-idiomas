@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { scoreFree, type FreeResult } from '../../domain/assessment/checkpoint';
 import { dayKey } from '../../domain/motivation/motivation';
 import { speak } from '../../infra/audio';
-import { llmAvailable, makeDrills, speechFeedback, type SpeechFeedback } from '../../infra/llm';
+import { llmAvailable, makeDrills, nextMineIndex, speechFeedback, type SpeechFeedback } from '../../infra/llm';
 import type { Recording } from '../../infra/recorder';
 import { MicButton, micAvailable } from '../components/Mic';
 import { BackIcon, SpeakerIcon } from '../icons/ui';
@@ -120,7 +120,7 @@ export function MySentences({ go }: { go: (r: Route) => void }) {
   const create = async () => {
     setBusy(true);
     setErr(null);
-    const drills = await makeDrills(lines, custom.length);
+    const drills = await makeDrills(lines, nextMineIndex(custom));
     setBusy(false);
     if (!drills || !drills.length) {
       setErr('Não consegui gerar as frases agora. Tente de novo em instantes.');
@@ -164,7 +164,7 @@ export function MySentences({ go }: { go: (r: Route) => void }) {
                 <li key={d.id}>
                   <button className="icon-btn inline" onClick={() => speak(d.en)} aria-label={`Ouvir ${d.en}`}>▶</button>
                   <span><b lang="en">{d.en}</b><br /><small className="muted">{d.pt} · degrau {st + 1}/5</small></span>
-                  <button className="link-btn" onClick={() => store.set((s) => ({ ...s, custom: s.custom.filter((x) => x.id !== d.id) }))}>remover</button>
+                  <button className="link-btn" onClick={() => store.set((s) => { const { [d.id]: _gone, ...production } = s.production; return { ...s, custom: s.custom.filter((x) => x.id !== d.id), production }; })}>remover</button>
                 </li>
               );
             })}

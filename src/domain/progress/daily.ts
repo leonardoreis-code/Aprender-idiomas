@@ -83,7 +83,7 @@ export function weekly(daily: Daily, today: string, weeks = 8): WeekSummary[] {
       if (!s) continue;
       if (s.spokenSec || s.produced || s.mayaSec) active++;
       for (const k of Object.keys(acc) as (keyof DayStats)[]) if (k !== 'auto') acc[k] += s[k] ?? 0;
-      auto = s.auto;
+      if (s.produced) auto = s.auto;
     }
     out.push({
       start,
