@@ -22,6 +22,8 @@ type Go = (r: Route) => void;
 const NO_MIC = 'Este navegador não tem microfone com reconhecimento de fala. Use Chrome, Edge ou o app do Claude.';
 const wordCount = (t: string) => (t.trim() ? t.trim().split(/\s+/).length : 0);
 const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
+/** select e textarea não herdam fonte nem cor do tema por padrão. */
+const FIELD_STYLE = { fontFamily: 'inherit', color: 'inherit' } as const;
 
 /* ------------------------------------------------------------------ */
 /* Escuta ao vivo compartilhada pelas telas                             */
@@ -148,9 +150,10 @@ export function WeeklyReview({ go }: { go: Go }) {
   const started = r.verdict !== 'sem-plano';
   const v = VERDICTS[r.verdict];
   const main = nextAction(r);
-  const actions = [...REVIEW_ACTIONS].sort((a, b) => Number(b.id === main) - Number(a.id === main));
+  // sem plano, o botão do checkpoint já está no cartão de cima
+  const actions = REVIEW_ACTIONS.filter((a) => started || a.id !== 'checkpoint').sort((a, b) => Number(b.id === main) - Number(a.id === main));
   const hasData = r.activeDays > 0 || r.auto > 0 || r.topErrors.length > 0;
-  const pctTile = (x: number | null) => (x === null ? 'sem dados' : `${x}%`);
+  const pctTile = (x: number | null) => (x === null ? <span style={{ fontSize: '1.15rem' }}>sem dados</span> : `${x}%`);
 
   return (
     <main className="shell" id="main">
@@ -363,7 +366,7 @@ export function Shadowing({ go }: { go: Go }) {
       <section className="card stack" style={{ marginTop: 12 }}>
         <div>
           <label htmlFor="shadow-story" className="tag">História</label>
-          <select id="shadow-story" className="text-input" value={k} onChange={(e) => reset(Number(e.target.value))}>
+          <select id="shadow-story" className="text-input" style={FIELD_STYLE} value={k} onChange={(e) => reset(Number(e.target.value))}>
             {STORIES.map((s, n) => <option key={s.id} value={n}>{s.title} · {s.level}</option>)}
           </select>
         </div>
@@ -620,10 +623,10 @@ export function WorkVocab({ go }: { go: Go }) {
 type Star = AppState['starStories'][number];
 type StarKey = 's' | 't' | 'a' | 'r';
 const STAR_FIELDS: { key: StarKey; title: string; cue: string; hint: string; min: number; max: number; rows: number }[] = [
-  { key: 's', title: 'Situation', cue: 'o contexto', hint: 'O contexto: onde você trabalhava, qual era o projeto e qual era o problema. Duas ou três frases, no passado.', min: 20, max: 40, rows: 3 },
-  { key: 't', title: 'Task', cue: 'a sua responsabilidade', hint: 'A sua parte: o que cabia a você resolver ou entregar, e até quando.', min: 10, max: 25, rows: 2 },
-  { key: 'a', title: 'Action', cue: 'o que você fez', hint: 'O que você fez, passo a passo, sempre com "I" e não "we". É a parte mais longa.', min: 60, max: 90, rows: 5 },
-  { key: 'r', title: 'Result', cue: 'o resultado em números', hint: 'O resultado, de preferência com um número (tempo, custo, erros), e o que você aprendeu.', min: 20, max: 35, rows: 3 },
+  { key: 's', title: 'Situation', cue: 'o contexto', hint: 'O contexto: onde você trabalhava, qual era o projeto e qual era o problema. Duas ou três frases, no passado.', min: 20, max: 40, rows: 4 },
+  { key: 't', title: 'Task', cue: 'a sua responsabilidade', hint: 'A sua parte: o que cabia a você resolver ou entregar, e até quando.', min: 10, max: 25, rows: 3 },
+  { key: 'a', title: 'Action', cue: 'o que você fez', hint: 'O que você fez, passo a passo, sempre com "I" e não "we". É a parte mais longa.', min: 60, max: 90, rows: 7 },
+  { key: 'r', title: 'Result', cue: 'o resultado em números', hint: 'O resultado, de preferência com um número (tempo, custo, erros), e o que você aprendeu.', min: 20, max: 35, rows: 4 },
 ];
 const REHEARSE_SEC = 90;
 const blankStar = (): Star => ({ id: `star-${Date.now().toString(36)}`, title: '', s: '', t: '', a: '', r: '', at: 0 });
@@ -673,7 +676,7 @@ function StarField({ f, value, onChange }: { f: (typeof STAR_FIELDS)[number]; va
         <small className="muted">{plural(n, 'palavra', 'palavras')} · ideal de {f.min} a {f.max}</small>
       </div>
       <p className="fine" id={`${id}-hint`} style={{ margin: '2px 0 6px' }}>{f.hint}</p>
-      <textarea id={id} className="text-input" lang="en" rows={f.rows} value={value} onChange={(e) => onChange(e.target.value)} aria-describedby={`${id}-hint`} />
+      <textarea id={id} className="text-input" style={FIELD_STYLE} lang="en" rows={f.rows} value={value} onChange={(e) => onChange(e.target.value)} aria-describedby={`${id}-hint`} />
       <div aria-live="polite"><Marks marks={marks} /></div>
     </div>
   );
@@ -758,7 +761,7 @@ function StarRehearsal({ story, onEdit, onBack }: { story: Star; onEdit: () => v
   const pct = (left / REHEARSE_SEC) * 100;
 
   return (
-    <div className="stack">
+    <div className="stack" style={{ marginTop: 12 }}>
       <section className="card stack">
         <span className="ex-kicker">{story.title}</span>
         <p className="muted" style={{ margin: 0 }}>Conte a história sem ler. Na tela ficam só as quatro partes, na ordem, como apoio.</p>
@@ -791,7 +794,7 @@ function StarRehearsal({ story, onEdit, onBack }: { story: Star; onEdit: () => v
                 <h2 className="card-h">{res.wpm} palavras por minuto</h2>
                 <div className="cp-tiles">
                   <div className="cp-tile"><span className="tag">Ritmo</span><b>{res.wpm}</b><small className="muted">palavras por minuto</small></div>
-                  <div className="cp-tile"><span className="tag">Volume</span><b>{res.words}</b><small className="muted">palavras em {Math.round(res.ms / 1000)} segundos</small></div>
+                  <div className="cp-tile"><span className="tag">Volume</span><b>{res.words}</b><small className="muted">palavras em {Math.round(res.ms / 1000)}s</small></div>
                   <div className="cp-tile"><span className="tag">Partes</span><b>{res.parts.filter((p) => p.ok).length} de {res.parts.filter((p) => p.ok !== null).length}</b><small className="muted">apareceram na fala</small></div>
                 </div>
                 <ul className="cp-cats">

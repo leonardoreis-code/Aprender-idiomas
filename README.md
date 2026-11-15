@@ -11,7 +11,7 @@ ELEVENLABS_API_KEY=sk_... npm start      # http://localhost:8787  (sem a chave t
 # desenvolvimento
 npm run dev:api   # backend na 8787
 npm run dev       # front com hot reload (proxy /api → 8787)
-npm test          # 179 testes (domínio + validação de todo o conteúdo)
+npm test          # 357 testes (domínio + validação de todo o conteúdo)
 ```
 
 ## Como o aprendizado é comprovado
@@ -20,6 +20,12 @@ npm test          # 179 testes (domínio + validação de todo o conteúdo)
 - **Evolução**: gráficos dos checkpoints e evidência semanal automática (minutos falando, retenção real, velocidade).
 - **Plano de 6 meses**: 26 semanas em 4 fases, com metas semanais de minutos falando. Ver [`docs/PLANO-6-MESES.md`](docs/PLANO-6-MESES.md)
   e as 66 melhorias em [`docs/MELHORIAS.md`](docs/MELHORIAS.md).
+
+## O que faz o aluno aprender de fato
+- **Seus erros voltam.** Todo erro marcado na sua fala entra num banco pessoal e reaparece com repetição espaçada.
+- **Tente antes.** Três frases antes da explicação de cada aula, com o antes e depois medido.
+- **O detector aprende com você.** "Não era erro" duas vezes silencia a regra.
+- **Conteúdo para 6 meses.** 38 aulas, 456 frases, 20 simulações, 14 histórias de reconto e 8 treinos curtos.
 
 ## Simulações do dia a dia
 Dez conversas completas (daily com bloqueio, avisar atraso, discordar em reunião, call com cliente, entrevista, restaurante,

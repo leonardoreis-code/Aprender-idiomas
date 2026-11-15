@@ -34,6 +34,8 @@ import { DelayedEcho, Fluency, Lab, Retell } from './ui/screens/Methods';
 import { MissionPlayer, MissionsHub } from './ui/screens/Missions';
 import { isArtifact } from './infra/platform';
 import { ErrorReview, PRETEST_INDEXES } from './ui/screens/Learning';
+import { AskDrill, NumbersDrill, QuickResponse, TransformDrill } from './ui/screens/Drills2';
+import { Shadowing, StarBuilder, WeeklyReview, WorkVocab } from './ui/screens/Extras2';
 import { Logo } from './ui/icons/ui';
 import { NavIcon } from './ui/components/NavIcon';
 
@@ -180,6 +182,12 @@ function Screen({ route, go }: { route: Route; go: (r: Route) => void }) {
       return <DelayedEcho go={go} />;
     case 'errors':
       return <ErrorReview go={go} />;
+    case 'weekly':
+      return <WeeklyReview go={go} />;
+    case 'drill': {
+      const D = { transformar: TransformDrill, perguntas: AskDrill, 'resposta-rapida': QuickResponse, numeros: NumbersDrill, shadowing: Shadowing, vocabulario: WorkVocab, star: StarBuilder }[route.id];
+      return D ? <D key={route.id} go={go} /> : <Lab go={go} />;
+    }
     case 'missions':
       return <MissionsHub go={go} />;
     case 'mission':

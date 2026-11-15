@@ -137,4 +137,51 @@ Critério de corte: entra primeiro o que **mede** a fala ou **aumenta minutos fa
 | 101 | Interrupções e ruído de chamada (áudio ruim, duas pessoas falando) | 🗺️ P2 |
 | 102 | Simulações em grupo (reunião com 3 personagens) | 🗺️ P2 |
 
-**Totais:** 102 melhorias · ✅ 60 implementadas · 🗺️ 42 planejadas.
+## I. Rodada "aprender de verdade" (63 itens)
+Contagem honesta: 34 são **conteúdo novo** (o curso acabava em 10 a 12 semanas) e 29 são **mecanismos de aprendizado**.
+Esta rodada também fecha 13 itens que estavam planejados acima (nº 15, 37, 45, 50, 52, 53, 59, 62, 63, 80, 83, 99 e parte do 28).
+
+### Conteúdo (34)
+| # | Item | Status |
+|---|---|---|
+| 103–112 | Trilha **Rumo ao B2**: 10 aulas, 120 frases (condicionais, passiva, discurso indireto, orações relativas, phrasal verbs 1 e 2, used to, linguagem diplomática, comparações) | ✅ |
+| 113–114 | Kit de sobrevivência em reunião: 2 aulas, 24 frases (ganhar tempo, pedir para repetir, interromper, discordar, encerrar) | ✅ |
+| 115–124 | 10 simulações novas: code review, incidente em produção, onboarding, negociar prazo, demo, recrutador, aeroporto, médico, suporte, vizinho | ✅ |
+| 125–127 | Formas D, E e F do checkpoint (6 no total: nenhuma se repete em 24 semanas) | ✅ |
+| 128–135 | 8 histórias novas de reconto (níveis A2 a B2) | ✅ |
+| 136 | Glossário do "Como se diz?" com mais 185 termos | ✅ |
+
+### Mecanismos de aprendizado (29)
+| # | Item | Status |
+|---|---|---|
+| 137 | Banco de erros pessoais: todo erro marcado no treinador, nas simulações e no reconto é guardado | ✅ |
+| 138 | "Conserte seus erros": seus trechos errados voltam com repetição espaçada para você dizer certo | ✅ |
+| 139 | "Não era erro": com 2 avisos, a regra para de marcar para você | ✅ |
+| 140 | Lista de regras silenciadas, com reativar | ✅ |
+| 141 | 21 regras novas no detector (76 no total), com testes de falso positivo | ✅ |
+| 142 | "Tente antes": 3 frases antes da explicação da aula | ✅ |
+| 143 | Antes e depois por aula (as mesmas 3 frases, antes e depois da prática) | ✅ |
+| 144 | Backup do progresso (copiar) | ✅ |
+| 145 | Restaurar progresso de um backup | ✅ |
+| 146 | Avaliador de paráfrases na prática diária — artefato | ✅ (não testado ao vivo) |
+| 147 | Simulação criada a partir da sua situação real — artefato | ✅ (não testado ao vivo) |
+| 148 | Medição de pausas longas na fala ao vivo | ✅ (aproximada) |
+| 149 | Gráfico semanal de pausas por minuto | ✅ |
+| 150 | Gráfico semanal de tempo para começar a responder | ✅ |
+| 151 | Dia corrido: 5 frases para não quebrar o ritmo | ✅ |
+| 152 | Atalho "seus erros reais" na tela inicial | ✅ |
+| 153 | Da revisão de erros direto para a aula que explica aquela regra | ✅ |
+| 154 | Transforme: negativa, pergunta, passado, ele/ela, futuro, present perfect (48 itens) | ✅ |
+| 155 | Faça a pergunta: da resposta para a pergunta (36 itens) | ✅ |
+| 156 | Resposta rápida: tempo até começar a falar (40 perguntas) | ✅ |
+| 157 | Números em voz alta: preços, porcentagens, anos, horas, datas | ✅ |
+| 158 | Shadowing frase a frase | ✅ |
+| 159 | Vocabulário de trabalho PT→EN com caixas espaçadas | ✅ |
+| 160 | Histórias STAR com correção ao digitar e ensaio de 90 segundos | ✅ |
+| 161 | Revisão da semana: veredito, erros mais frequentes e o que fazer agora | ✅ |
+| 162 | Corretor: "studied" no lugar de "studies" não passa mais como quase certo | ✅ |
+| 163 | Trilha B2 entra na recomendação conforme o perfil | ✅ |
+| 164 | Tela Falar reorganizada: conversas, fluência e treinos curtos | ✅ |
+| 165 | Rodízio do checkpoint com 6 formas | ✅ |
+
+**Totais:** ✅ 123 implementadas (60 anteriores + 63 desta rodada) · 🗺️ 29 planejadas restantes (42 − 13 fechadas).

@@ -79,7 +79,12 @@ export type Verdict = 'correct' | 'almost' | 'wrong';
 /** "work" × "works" ou "like" × "liked" é erro de gramática, não de digitação. */
 export function isInflection(a: string, b: string): boolean {
   const [short, long] = a.length <= b.length ? [a, b] : [b, a];
-  return long.startsWith(short) && ['s', 'd', 'es', 'ed'].includes(long.slice(short.length));
+  if (long.startsWith(short) && ['s', 'd', 'es', 'ed'].includes(long.slice(short.length))) return true;
+  // mesma raiz, terminações verbais diferentes: "studies" × "studied", "works" × "worked"
+  let i = 0;
+  while (i < a.length && i < b.length && a[i] === b[i]) i++;
+  const ENDS = ['', 's', 'd', 'es', 'ed', 'ies', 'ied', 'ing', 'y'];
+  return i >= 3 && a !== b && ENDS.includes(a.slice(i)) && ENDS.includes(b.slice(i));
 }
 
 /**

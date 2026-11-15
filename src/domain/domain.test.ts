@@ -35,6 +35,9 @@ describe('F-03 correção tolerante', () => {
     expect(checkTyped('I eta bread', ['I eat bread'])).toBe('wrong');
     expect(checkTyped('she work at a bank', ['She works at a bank'])).toBe('wrong');
     expect(checkTyped('I like the meeting', ['I liked the meeting'])).toBe('wrong');
+    expect(checkTyped('she studied english', ['She studies English'])).toBe('wrong');
+    expect(checkTyped('he worked here', ['He works here'])).toBe('wrong');
+    expect(checkTyped('nice to meet you, plaese', ['Nice to meet you, please'])).toBe('almost');
   });
   it('vazio é errado', () => expect(checkTyped('   ', ['hi'])).toBe('wrong'));
 });

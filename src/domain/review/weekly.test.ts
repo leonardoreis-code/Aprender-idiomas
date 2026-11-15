@@ -207,7 +207,7 @@ describe('weekReview: sugestões', () => {
       expect(r.suggestions.length).toBeGreaterThanOrEqual(1);
       expect(r.suggestions.length).toBeLessThanOrEqual(3);
       expect(r.focus.length).toBeGreaterThan(10);
-      for (const s of [...r.suggestions, r.focus]) expect(s).not.toMatch(/[–—]/);
+      for (const s of [...r.suggestions, r.focus]) expect(s).not.toMatch(/[\u2013\u2014]/);
     }
   });
 });
