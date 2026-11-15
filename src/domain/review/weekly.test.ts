@@ -104,7 +104,7 @@ describe('weekReview: veredito', () => {
 
   it('adiantado: 110% ou mais da meta proporcional', () => {
     expect(weekReview(st({ daily: days(START, 6, { speak: 7.5 }) }), END_W1).verdict).toBe('adiantado'); // 45 de 40
-    // no terceiro dia a meta proporcional é 40 × 3/7 ≈ 17 min
+    // no terceiro dia a meta proporcional é 40 × 3/7, cerca de 17 min
     expect(weekReview(st({ daily: days(START, 3, { speak: 6.5 }) }), '2026-01-07').verdict).toBe('adiantado'); // 20 (arredondado)
   });
 
@@ -207,7 +207,7 @@ describe('weekReview: sugestões', () => {
       expect(r.suggestions.length).toBeGreaterThanOrEqual(1);
       expect(r.suggestions.length).toBeLessThanOrEqual(3);
       expect(r.focus.length).toBeGreaterThan(10);
-      for (const s of [...r.suggestions, r.focus]) expect(s).not.toMatch(/[—–]/);
+      for (const s of [...r.suggestions, r.focus]) expect(s).not.toMatch(/[–—]/);
     }
   });
 });

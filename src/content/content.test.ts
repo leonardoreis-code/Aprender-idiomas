@@ -2,17 +2,22 @@ import { describe, expect, it } from 'vitest';
 import { falaLessons } from './en/fala';
 import { zeroLessons } from './en/zero';
 import { techLessons } from './en/tech';
+import { b2Lessons } from './en/b2';
+import { kitLessons } from './en/kit';
 import { stories } from './en/stories';
 import { videoLessons } from './en/videos';
 import { normalize } from '../domain/practice/answer';
 
-const lessons = [...zeroLessons, ...falaLessons, ...techLessons];
+const lessons = [...zeroLessons, ...falaLessons, ...kitLessons, ...techLessons, ...b2Lessons];
 
 describe('Conteúdo v2', () => {
   it('quantidades mínimas', () => {
     expect(zeroLessons.length).toBe(8);
     expect(falaLessons.length).toBe(12);
     expect(techLessons.length).toBe(6);
+    expect(b2Lessons.length).toBe(10);
+    expect(kitLessons.length).toBe(2);
+    expect(lessons.flatMap((l) => l.drills)).toHaveLength(456);
     expect(stories.length).toBe(10);
     expect(videoLessons.length).toBe(8);
   });
