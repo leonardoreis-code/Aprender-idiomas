@@ -35,6 +35,9 @@ const HAND = 'M8 13V6a1.5 1.5 0 0 1 3 0v5M11 11V4.5a1.5 1.5 0 0 1 3 0V11M14 11V6
 const KEYS = 'M3 7h18v10H3zM7 11h.01M11 11h.01M15 11h.01M7 14h10';
 const LEAVE = 'M3 15c5-5 13-5 18 0l-2.5 2.5-3-1.5v-3a10 10 0 0 0-7 0v3l-3 1.5z';
 
+/** Agente de voz em tempo real (ElevenLabs Conversational AI): reunião com 3 vozes, correção por reformulação e debrief. */
+export const LIVE_CALL_URL = 'https://elevenlabs.io/app/talk-to?agent_id=agent_1301m7evr541fkatt83x0kzwn22y';
+
 /* =============================== HUB =============================== */
 export function MeetingsHub({ go }: { go: (r: Route) => void }) {
   const store = useStore();
@@ -45,6 +48,15 @@ export function MeetingsHub({ go }: { go: (r: Route) => void }) {
       <h1 className="page-title">Reunião ao vivo</h1>
       <p className="muted">Uma call com 2 ou 3 colegas que conversam entre si, te chamam pelo nome, fazem perguntas diretas e reagem ao que você diz. Quando você erra, eles fazem o que uma pessoa faz: repetem a ideia já certa e seguem em frente. O detalhe do erro aparece só para você, no chat.</p>
 
+      <section className="card stack live-call">
+        <span className="ex-kicker">Voz em tempo real · recomendado</span>
+        <h2 className="card-h" style={{ margin: 0 }}>Reunião por voz com a sua rotina de verdade</h2>
+        <p style={{ margin: 0 }}>Uma call de verdade, falando e ouvindo sem apertar botão: você conta o que está fazendo nesta semana e a Priya, o Tom e o Josh fazem a daily, a planning, a call com cliente ou a entrevista <b>sobre o seu trabalho real</b>. Responde em menos de 1 segundo, você pode interromper, e quando você erra o colega repete a sua ideia do jeito certo e segue. Travou? Diga <i>coach</i>. No fim, a Maya repassa seus 3 erros e pede para você dizer certo.</p>
+        <a className="btn btn-primary" href={LIVE_CALL_URL} target="_blank" rel="noopener noreferrer">Entrar na call por voz</a>
+        <p className="fine" style={{ margin: 0 }}>Abre numa aba da ElevenLabs. Use fone de ouvido e libere o microfone. Depois da call, os erros que você cometeu ficam registrados na análise da conversa.</p>
+      </section>
+
+      <h2 className="card-h">Ou treine no app, passo a passo</h2>
       <section className="card stack">
         <label className="field">
           <span>Como te chamam na reunião</span>

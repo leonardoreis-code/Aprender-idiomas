@@ -33,6 +33,13 @@ Vinte conversas completas (daily com bloqueio, avisar atraso, discordar em reuni
 hotel…). O personagem reage ao que você diz, os objetivos acendem enquanto você fala e a correção aparece embaixo da sua
 fala sem interromper. Dá para colocar seu cargo, projeto e colegas reais nas falas.
 
+## Reunião por voz em tempo real (o principal)
+**https://elevenlabs.io/app/talk-to?agent_id=agent_1301m7evr541fkatt83x0kzwn22y**. Call por voz de verdade, sem apertar
+botão: você diz no que está trabalhando nesta semana e a Priya, o Tom e o Josh (vozes diferentes) fazem a daily, a
+planning, a call com cliente ou a entrevista sobre o seu trabalho real. Quando você erra, o colega repete a sua ideia do
+jeito certo e segue; "coach" pede ajuda; no fim a Maya cobra seus 3 erros em voz alta. Detalhes em
+[`specs/SPEC-meet.md`](specs/SPEC-meet.md).
+
 ## Reunião ao vivo e copiloto de reunião real
 - **Reunião ao vivo** (`#reunioes`): call com 2 ou 3 colegas (vozes e avatares diferentes) que conversam entre si,
   te chamam pelo nome, perguntam, cobram quando você fica no mudo e reagem ao que você disse. Quando você erra,
