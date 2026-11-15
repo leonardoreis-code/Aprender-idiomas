@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { allDrills } from '../../content';
-import { retellCoverage, STORIES } from '../../content/coach';
+import { retellCoverage, STORIES as BASE_STORIES } from '../../content/coach';
+import { STORIES_EXTRA } from '../../content/retell2';
 import { spot } from '../../domain/coach/spotter';
 import { scoreFree } from '../../domain/assessment/checkpoint';
 import { analyzeAccent } from '../../domain/pronunciation/accent';
@@ -12,6 +13,8 @@ import { BackIcon, MicIcon, SpeakerIcon } from '../icons/ui';
 import type { Route } from '../router';
 import { useStore } from '../store';
 import { FREE_PROMPTS } from './Extras';
+
+const STORIES = [...BASE_STORIES, ...STORIES_EXTRA];
 
 /* ------------------------------------------------------------------ */
 /* Tela "Falar": todos os treinos de fala num lugar só                  */
@@ -28,10 +31,20 @@ export function Lab({ go }: { go: (r: Route) => void }) {
     { tag: 'Pronúncia', title: 'Laboratório de sotaque', what: 'Descubra quais sons do português aparecem no seu inglês.', why: 'Foco em ser entendido, não em soar nativo.', route: { name: 'accent' } },
     { tag: 'Seu trabalho', title: 'Minhas frases', what: 'Transforme o que você vai dizer amanhã em treino.', why: 'Praticar o que você realmente usa transfere mais rápido para a vida real.', route: { name: 'mine' } },
   ];
+  const quick: { title: string; what: string; route: Route }[] = [
+    { title: 'Conserte seus erros', what: 'Os trechos que você disse errado voltam para você dizer certo.', route: { name: 'errors' } },
+    { title: 'Resposta rápida', what: 'Ouça a pergunta e comece a responder em até 2 segundos.', route: { name: 'drill', id: 'resposta-rapida' } },
+    { title: 'Transforme', what: 'Negativa, pergunta, passado, ele ou ela: a mesma frase em outras formas.', route: { name: 'drill', id: 'transformar' } },
+    { title: 'Faça a pergunta', what: 'Você vê a resposta e formula a pergunta.', route: { name: 'drill', id: 'perguntas' } },
+    { title: 'Números em voz alta', what: 'Preços, porcentagens, anos e horas sem travar.', route: { name: 'drill', id: 'numeros' } },
+    { title: 'Shadowing', what: 'Repita frase a frase logo depois do áudio.', route: { name: 'drill', id: 'shadowing' } },
+    { title: 'Vocabulário de trabalho', what: 'Do português para o inglês, com revisão espaçada.', route: { name: 'drill', id: 'vocabulario' } },
+    { title: 'Histórias STAR', what: 'Monte e ensaie suas respostas de entrevista.', route: { name: 'drill', id: 'star' } },
+  ];
   return (
     <main className="shell" id="main">
       <h1 className="page-title">Falar</h1>
-      <p className="muted">Oito formas de treinar a fala, cada uma atacando uma parte diferente do problema. {state.coach.echoBest > 0 && <>Seu recorde no eco: <b>{state.coach.echoBest} palavras</b>.</>}</p>
+      <p className="muted">Conversas completas, treinos de fluência e exercícios curtos. {state.coach.echoBest > 0 && <>Seu recorde no eco: <b>{state.coach.echoBest} palavras</b>.</>}</p>
       <div className="lab-grid">
         {items.map((it, i) => (
           <button key={it.title} className={`tile ${i === 0 ? 'tile-main' : ''}`} onClick={() => go(it.route)}>
@@ -39,6 +52,15 @@ export function Lab({ go }: { go: (r: Route) => void }) {
             <strong className="tile-title">{it.title}</strong>
             <span>{it.what}</span>
             <small className="muted">{it.why}</small>
+          </button>
+        ))}
+      </div>
+      <h2 className="card-h" style={{ marginTop: 22 }}>Treinos curtos (3 a 5 minutos)</h2>
+      <div className="lab-grid">
+        {quick.map((q) => (
+          <button key={q.title} className="tile" onClick={() => go(q.route)}>
+            <strong className="tile-title" style={{ fontSize: '1.1rem' }}>{q.title}</strong>
+            <span className="muted">{q.what}</span>
           </button>
         ))}
       </div>
@@ -51,6 +73,7 @@ export function Lab({ go }: { go: (r: Route) => void }) {
 /* Gravador ao vivo com contagem regressiva (usado pelos treinos)       */
 /* ------------------------------------------------------------------ */
 function TimedTalk({ seconds, onDone, showLive = true }: { seconds: number; onDone: (text: string, ms: number) => void; showLive?: boolean }) {
+  const store = useStore();
   const [on, setOn] = useState(false);
   const [left, setLeft] = useState(seconds);
   const [text, setText] = useState('');
@@ -74,6 +97,7 @@ function TimedTalk({ seconds, onDone, showLive = true }: { seconds: number; onDo
     void s.done.then((r) => {
       sess.current = null;
       setOn(false);
+      if (r.text.trim() && r.ms > 4000) store.logDay({ pauses: r.pauses, pauseMin: r.ms / 60000 });
       onDone(r.text, Math.max(r.ms, 1000));
     });
   };
@@ -188,8 +212,11 @@ export function Retell({ go }: { go: (r: Route) => void }) {
       store.logDay({ spokenSec: ms / 1000, spoken: 1 });
       store.track('spoken');
       store.gainXp(10 + c * 3);
-      const cats = spot(text).map((s) => s.cat);
-      if (cats.length) store.set((s) => ({ ...s, errorLog: [cats, ...s.errorLog].slice(0, 300) }));
+      const found = spot(text);
+      if (found.length) {
+        store.set((s) => ({ ...s, errorLog: [found.map((f) => f.cat), ...s.errorLog].slice(0, 300) }));
+        store.bankErrors(found.map((f) => ({ source: 'rule' as const, ...f })), text);
+      }
     }
     c >= story.ideas.length - 1 ? sfxComplete() : sfxCorrect(1);
   };

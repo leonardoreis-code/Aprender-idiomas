@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
-import { applyJudgement, compare, nextForm, scoreFree, scoreItem, summarize, type CheckpointResult, type FreeResult, type ItemResult } from '../../domain/assessment/checkpoint';
-import { CATEGORY_LABEL, FORMS } from '../../domain/assessment/forms';
+import { ALL_FORMS, applyJudgement, compare, nextForm, scoreFree, scoreItem, summarize, type CheckpointResult, type FreeResult, type ItemResult } from '../../domain/assessment/checkpoint';
+import { CATEGORY_LABEL } from '../../domain/assessment/forms';
 import { dayKey } from '../../domain/motivation/motivation';
 import { checkpointSchedule, nextCheckpoint, weekOf } from '../../domain/plan/sixMonths';
 import { judgeCheckpoint, llmAvailable } from '../../infra/llm';
@@ -200,7 +200,7 @@ export function CheckpointReport({ result, history, onContinue }: { result: Chec
   const base = history[0] && history[0].id !== result.id ? history[0] : null;
   const prev = idx > 0 ? history[idx - 1] : null;
   const d = base ? compare(base, result) : null;
-  const form = FORMS.find((f) => f.id === result.form)!;
+  const form = ALL_FORMS.find((f) => f.id === result.form)!;
   const prevCats = prev ? Object.fromEntries(prev.items.map((x) => [x.cat, x.verdict !== 'wrong'])) : null;
   return (
     <main className="shell checkpoint" id="main">
@@ -275,7 +275,7 @@ export function CheckpointReport({ result, history, onContinue }: { result: Chec
         ))}
       </section>
 
-      <p className="fine">Como o índice é calculado: 45% precisão, 25% velocidade, 30% fluência, com faixas fixas. As 12 frases nunca aparecem nas aulas e as formas A, B e C se revezam. É uma medida interna consistente, não um certificado.</p>
+      <p className="fine">Como o índice é calculado: 45% precisão, 25% velocidade, 30% fluência, com faixas fixas. As 12 frases nunca aparecem nas aulas e as formas A a F se revezam. É uma medida interna consistente, não um certificado.</p>
       {onContinue && <button className="btn btn-primary" onClick={onContinue}>Ver minha evolução</button>}
     </main>
   );

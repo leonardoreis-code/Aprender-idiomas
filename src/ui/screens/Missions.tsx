@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { DAY_TAGS, findMission, lookup, MISSIONS } from '../../content/missions';
+import { DAY_TAGS, GLOSSARY, MISSIONS } from '../../content/missions';
+import { GLOSSARY_EXTRA, MISSIONS_EXTRA } from '../../content/missions2';
 import { repaired, type Issue } from '../../domain/coach/mediation';
 import { spot } from '../../domain/coach/spotter';
 import type { Drill } from '../../domain/curriculum/speaking';
@@ -8,12 +9,25 @@ import { ERROR_CATEGORIES } from '../../domain/production/errors';
 import { fill, goalsMet, initialSim, nextGoal, react, score, type Goal, type Mission, type SimState } from '../../domain/sim/engine';
 import { speak, stopAudio } from '../../infra/audio';
 import { liveAvailable, startLive, type LiveSession } from '../../infra/live';
-import { howToSay, llmAvailable, simTurn } from '../../infra/llm';
+import { howToSay, llmAvailable, makeMission, simTurn } from '../../infra/llm';
 import { isArtifact } from '../../infra/platform';
 import { sfxComplete, sfxCorrect, sfxTap } from '../../infra/sfx';
 import { BackIcon, BulbIcon, CheckIcon, MicIcon, SpeakerIcon } from '../icons/ui';
 import type { Route } from '../router';
 import { useStore } from '../store';
+
+/** Todas as simulações: as 20 do app mais as criadas pelo aluno. */
+export const allMissions = (custom: Mission[]) => [...custom, ...MISSIONS, ...MISSIONS_EXTRA];
+const ALL_WORDS: Record<string, string> = { ...GLOSSARY_EXTRA, ...GLOSSARY };
+const strip = (t: string) => t.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
+/** Socorro de vocabulário: glossário local (PT sem acento → EN). */
+function lookup(pt: string): string | null {
+  const k = strip(pt);
+  if (!k) return null;
+  if (ALL_WORDS[k]) return ALL_WORDS[k];
+  const hit = Object.keys(ALL_WORDS).find((key) => k.startsWith(key) || key.startsWith(k));
+  return hit && Math.abs(hit.length - k.length) <= 3 ? ALL_WORDS[hit] : null;
+}
 
 const Stars = ({ n, size = 18 }: { n: number; size?: number }) => (
   <span role="img" aria-label={`${n} de 3 estrelas`} className="stars">
@@ -42,7 +56,20 @@ export function MissionsHub({ go }: { go: (r: Route) => void }) {
   const ctx = sim.context;
   const setCtx = (k: keyof typeof ctx, v: string) => store.set((s) => ({ ...s, sim: { ...s.sim, context: { ...s.sim.context, [k]: v.slice(0, 60) } } }));
   const toggle = (id: string) => store.set((s) => ({ ...s, sim: { ...s.sim, today: { day: today, tags: tags.includes(id) ? tags.filter((t) => t !== id) : [...tags, id] } } }));
-  const list = useMemo(() => [...MISSIONS].sort((a, b) => Number(b.tags.some((t) => tags.includes(t))) - Number(a.tags.some((t) => tags.includes(t)))), [tags]);
+  const [desc, setDesc] = useState('');
+  const [making, setMaking] = useState(false);
+  const [makeErr, setMakeErr] = useState<string | null>(null);
+  const create = async () => {
+    setMaking(true);
+    setMakeErr(null);
+    const m = await makeMission(desc.trim(), `role ${ctx.role}, project ${ctx.project}, teammate ${ctx.teammate}, tool ${ctx.tool}`);
+    setMaking(false);
+    if (!m) return setMakeErr('Não consegui montar a simulação agora. Tente descrever em uma ou duas frases.');
+    store.set((s) => ({ ...s, sim: { ...s.sim, custom: [m, ...s.sim.custom].slice(0, 10) } }));
+    setDesc('');
+    go({ name: 'mission', id: m.id });
+  };
+  const list = useMemo(() => allMissions(sim.custom).sort((a, b) => Number(b.tags.some((t) => tags.includes(t))) - Number(a.tags.some((t) => tags.includes(t)))), [tags, sim.custom]);
   return (
     <main className="shell" id="main">
       <button className="link-btn back" onClick={() => go({ name: 'lab' })}><BackIcon /> Falar</button>
@@ -64,13 +91,27 @@ export function MissionsHub({ go }: { go: (r: Route) => void }) {
         </details>
       </section>
 
+      <section className="card stack">
+        <strong>Ensaiar uma situação real sua</strong>
+        {llmAvailable() ? (
+          <>
+            <label htmlFor="mk" className="muted">Descreva em português o que vai acontecer: com quem, sobre o quê e o que você precisa conseguir.</label>
+            <textarea id="mk" className="text-input" rows={3} value={desc} onChange={(e) => setDesc(e.target.value)} placeholder="Amanhã tenho uma reunião com o time da Índia para explicar por que o relatório de vendas atrasou e combinar a nova data." />
+            {makeErr && <p className="err-pill" role="alert">{makeErr}</p>}
+            <button className="btn btn-primary" disabled={desc.trim().length < 15 || making} onClick={create}>{making ? 'Montando a simulação…' : 'Criar simulação'}</button>
+          </>
+        ) : (
+          <p className="muted" style={{ margin: 0 }}>Criar uma simulação a partir da sua agenda usa o Claude e só funciona na versão artefato. Aqui, use o contexto real acima: ele entra nas falas das simulações prontas.</p>
+        )}
+      </section>
+
       <div className="mission-grid">
         {list.map((m) => {
           const r = sim.results[m.id];
           const forToday = m.tags.some((t) => tags.includes(t));
           return (
             <button key={m.id} className={`tile mission-tile ${forToday ? 'today' : ''}`} onClick={() => go({ name: 'mission', id: m.id })}>
-              <span className="row-between"><span className="ex-kicker">{m.area === 'trabalho' ? 'Trabalho' : 'Dia a dia'}{forToday ? ' · para hoje' : ''}</span>{r ? <Stars n={r.stars} /> : <small className="muted">nova</small>}</span>
+              <span className="row-between"><span className="ex-kicker">{m.id.startsWith('meu-') ? 'Criada por você' : m.area === 'trabalho' ? 'Trabalho' : 'Dia a dia'}{forToday ? ' · para hoje' : ''}</span>{r ? <Stars n={r.stars} /> : <small className="muted">nova</small>}</span>
               <span className="row" style={{ flexWrap: 'nowrap', alignItems: 'flex-start' }}><CharFace m={m} /><span style={{ display: 'grid', gap: 2 }}><strong className="tile-title">{m.title}</strong><small className="muted">com {m.character.name}, {m.character.role}</small></span></span>
               <span className="muted">{m.setting}</span>
             </button>
@@ -90,7 +131,7 @@ const MAX_TURNS = 9;
 
 export function MissionPlayer({ id, go }: { id: string; go: (r: Route) => void }) {
   const store = useStore();
-  const mission = findMission(id)!;
+  const mission = allMissions(store.state.sim.custom).find((m) => m.id === id) ?? MISSIONS[0];
   const ctx = store.state.sim.context;
   const useAi = llmAvailable();
   const played = !!store.state.sim.results[mission.id];
@@ -170,9 +211,10 @@ export function MissionPlayer({ id, go }: { id: string; go: (r: Route) => void }
       },
     });
     session.current = s;
-    void s.done.then(({ text, ms }) => {
+    void s.done.then(({ text, ms, pauses }) => {
       session.current = null;
       if (!alive.current) return;
+      if (text.trim() && ms > 4000) store.logDay({ pauses, pauseMin: ms / 60000 });
       setListening(false);
       setLive('');
       if (!text.trim()) return;
@@ -241,7 +283,10 @@ export function MissionPlayer({ id, go }: { id: string; go: (r: Route) => void }
         }
       }
     }
-    if (local.length) store.set((s) => ({ ...s, errorLog: [local.map((i) => i.cat), ...s.errorLog].slice(0, 300) }));
+    if (local.length) {
+      store.set((s) => ({ ...s, errorLog: [local.map((i) => i.cat), ...s.errorLog].slice(0, 300) }));
+      store.bankErrors(local, text);
+    }
     setSim(step.state);
     simRef.current = step.state;
     await charSay(step.line, step.state.done);
@@ -410,6 +455,7 @@ export function MissionPlayer({ id, go }: { id: string; go: (r: Route) => void }
                     {!i.fixed && (
                       <span className="feed-actions">
                         {!i.revealed && <button className="link-btn mini" onClick={() => reveal(k, j)}>ver correção</button>}
+                        {i.source === 'rule' && <button className="link-btn mini" onClick={() => { store.reportFp(i.rule); setBubbles((bs) => bs.map((x, kk) => (kk === k ? { ...x, issues: x.issues.filter((_, jj) => jj !== j) } : x))); }}>não era erro</button>}
                         {i.revealed && <button className="link-btn mini" onClick={() => speak(i.fix)}>ouvir</button>}
                         {canTalk && !listening && <button className="link-btn mini" onClick={() => { setRepairAt({ b: k, i: j }); if (!typing) listen(); }}>dizer de novo</button>}
                       </span>

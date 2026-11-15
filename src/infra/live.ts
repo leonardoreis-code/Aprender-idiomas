@@ -15,7 +15,15 @@ export const liveAvailable = () => (isArtifact ? !!caps.dictation : !!webCtor())
 
 export interface LiveSession {
   stop: () => void;
-  done: Promise<{ text: string; ms: number }>;
+  done: Promise<LiveResult>;
+}
+
+export interface LiveResult {
+  text: string;
+  ms: number;
+  /** Pausas maiores que 1,5 s depois da primeira palavra (aproximado: depende do ritmo do reconhecedor). */
+  pauses: number;
+  longestPauseMs: number;
 }
 
 export function startLive(opts: { onText: (text: string) => void; silenceMs?: number; maxMs?: number; lang?: string }): LiveSession {
@@ -26,8 +34,11 @@ export function startLive(opts: { onText: (text: string) => void; silenceMs?: nu
   let partial = '';
   let ended = false;
   let silence: ReturnType<typeof setTimeout> | undefined;
-  let resolve!: (v: { text: string; ms: number }) => void;
-  const done = new Promise<{ text: string; ms: number }>((r) => (resolve = r));
+  let resolve!: (v: LiveResult) => void;
+  const done = new Promise<LiveResult>((r) => (resolve = r));
+  let pauses = 0;
+  let longest = 0;
+  let spoke = false;
   const full = () => `${finals} ${partial}`.replace(/\s+/g, ' ').trim();
   let lastSpeech = started;
   let stopImpl: () => void = () => {};
@@ -37,10 +48,17 @@ export function startLive(opts: { onText: (text: string) => void; silenceMs?: nu
     ended = true;
     clearTimeout(silence);
     clearTimeout(hard);
-    resolve({ text: full(), ms: Math.max(500, lastSpeech - started) });
+    resolve({ text: full(), ms: Math.max(500, lastSpeech - started), pauses, longestPauseMs: longest });
   };
   const bump = () => {
-    lastSpeech = Date.now();
+    const now = Date.now();
+    if (spoke && full()) {
+      const gap = now - lastSpeech;
+      if (gap > 1500) pauses++;
+      longest = Math.max(longest, gap);
+    }
+    if (full()) spoke = true;
+    lastSpeech = now;
     opts.onText(full());
     clearTimeout(silence);
     if (full()) silence = setTimeout(() => stopImpl(), silenceMs);

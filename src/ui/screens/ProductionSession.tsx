@@ -12,6 +12,7 @@ import { BulbIcon, CheckIcon, CloseIcon, SpeakerIcon, TurtleIcon, XIcon } from '
 import { MicButton, micAvailable } from '../components/Mic';
 import { Confetti } from '../components/Graphics';
 import { useStore } from '../store';
+import { judgeCheckpoint, llmAvailable } from '../../infra/llm';
 
 interface Props {
   title: string;
@@ -58,7 +59,19 @@ export function ProductionSession({ title, queue: initial, pool, onExit, onDone 
     started.current = Date.now();
   }, [idx]);
 
-  const resolve = (o: Outcome) => {
+  const [judging, setJudging] = useState(false);
+  /** Resposta diferente da lista? Com o Claude disponível, um avaliador decide se ela também está certa. */
+  const resolve = async (first: Outcome) => {
+    let o = first;
+    if (!o.correct && o.said && item.stage >= 2 && llmAvailable() && o.said.trim().split(/\s+/).length >= 3) {
+      setJudging(true);
+      const j = await judgeCheckpoint([{ id: item.drill.id, pt: item.drill.pt, said: o.said, refs: [item.drill.en, ...(item.drill.alt ?? [])] }], []);
+      setJudging(false);
+      if (j?.accepted.includes(item.drill.id)) o = { ...o, correct: true, hesitant: true, errors: [], note: 'Sua forma também está correta. A mais comum é a de cima: vale treinar as duas.' };
+    }
+    finalize(o);
+  };
+  const finalize = (o: Outcome) => {
     const a: ProductionAttempt = { drillId: item.drill.id, stage: item.stage, correct: o.correct, hesitant: o.hesitant, ms: Date.now() - started.current, errors: o.errors, words: item.drill.en.split(/\s+/).length, spokenMs: o.spokenMs, due: item.reason === 'due' };
     setAttempts((x) => [...x, a]);
     store.track('produced');
@@ -138,12 +151,13 @@ export function ProductionSession({ title, queue: initial, pool, onExit, onDone 
           <span className="sr-only">Diga em inglês: </span>
           {item.drill.pt}
         </h1>
-        {item.stage === 0 && <StageBuild drill={item.drill} pool={pool} done={!!outcome} onResolve={resolve} />}
-        {item.stage === 1 && <StageChunks drill={item.drill} done={!!outcome} onResolve={resolve} />}
-        {item.stage === 2 && <StageType drill={item.drill} done={!!outcome} onResolve={resolve} />}
-        {item.stage >= 3 && <StageSpeak drill={item.drill} flash={item.stage === 4} done={!!outcome} onResolve={resolve} />}
+        {item.stage === 0 && <StageBuild drill={item.drill} pool={pool} done={!!outcome || judging} onResolve={resolve} />}
+        {item.stage === 1 && <StageChunks drill={item.drill} done={!!outcome || judging} onResolve={resolve} />}
+        {item.stage === 2 && <StageType drill={item.drill} done={!!outcome || judging} onResolve={resolve} />}
+        {item.stage >= 3 && <StageSpeak drill={item.drill} flash={item.stage === 4} done={!!outcome || judging} onResolve={resolve} />}
       </main>
 
+      {judging && <p role="status" className="muted" style={{ padding: '0 16px' }}><span className="spinner" aria-hidden /> Verificando se a sua forma também está certa…</p>}
       {outcome && <Feedback drill={item.drill} o={outcome} onNext={next} onSave={() => store.set((s) => ({ ...s, notebook: [{ en: item.drill.en, pt: item.drill.pt, at: Date.now() }, ...s.notebook.filter((n) => n.en !== item.drill.en)] }))} />}
     </div>
   );

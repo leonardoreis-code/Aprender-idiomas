@@ -2,6 +2,7 @@ import type { ArticleBlock, SpeakingLesson } from '../../domain/curriculum/speak
 import { speak } from '../../infra/audio';
 import { BackIcon, CheckIcon, SpeakerIcon } from '../icons/ui';
 import { useStore } from '../store';
+import { Pretest } from './Learning';
 import type { Route } from '../router';
 
 /**
@@ -36,6 +37,8 @@ export function LessonPage({ lesson, hasVideo, go }: { lesson: SpeakingLesson; h
           <p className="muted" style={{ margin: 0 }}>{lesson.pattern.meaning}</p>
         </div>
       </header>
+
+      <Pretest lesson={lesson} />
 
       <ol className="steps">
         {steps.map((s, k) => (

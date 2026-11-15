@@ -5,6 +5,7 @@
 import type { Drill } from '../domain/curriculum/speaking';
 import { normalize } from '../domain/practice/answer';
 import { caps } from './platform';
+import { goalMet, type Mission } from '../domain/sim/engine';
 
 export const llmAvailable = () => !!caps.sample;
 
@@ -244,4 +245,50 @@ export async function howToSay(pt: string, situation: string): Promise<string | 
   } catch {
     return null;
   }
+}
+
+/** Cria uma simulação a partir de uma situação real descrita pelo aluno (em português). */
+export async function makeMission(description: string, context: string): Promise<Mission | null> {
+  const r = await askJson<{ title?: unknown; setting?: unknown; character?: { name?: unknown; role?: unknown }; goals?: unknown; beats?: unknown; closing?: unknown; area?: unknown }>(
+    `A Brazilian professional (context: ${context}) wants to rehearse, in English, this REAL upcoming situation (described in Portuguese): "${description}"
+Design a short role-play. Respond ONLY with JSON:
+{"title":"título curto em português","setting":"2 frases em português: a situação e o que o aluno precisa conseguir","area":"trabalho" or "vida","character":{"name":"first name","role":"papel em português"},
+ "goals":[exactly 4 objects {"id":"short_id","label":"o que fazer, em português","pt":"frase-exemplo em português","example":"the same sentence in natural spoken English","starter":"sentence starter in English ending with …","keywords":["3 to 6 lowercase English words or short phrases, ANY of which signals the goal; at least one must appear in the example"]}],
+ "beats":[3 or 4 objects {"say":"character line in English, 1-2 short sentences","pt":"tradução","wants":["goal ids this line invites"],"nudge":"natural follow-up in English if the learner did not do it"}],
+ "closing":"character's last line in English"}
+Every goal id must appear in some beat's "wants". Keep the English natural and at B1 level.`,
+  );
+  if (!r || typeof r.title !== 'string' || !Array.isArray(r.goals) || !Array.isArray(r.beats)) return null;
+  const goals = (r.goals as { id?: unknown; label?: unknown; pt?: unknown; example?: unknown; starter?: unknown; keywords?: unknown }[])
+    .filter((g) => typeof g.id === 'string' && typeof g.label === 'string' && typeof g.example === 'string')
+    .slice(0, 4)
+    .map((g) => {
+      const example = (g.example as string).slice(0, 160);
+      const kws = Array.isArray(g.keywords) ? g.keywords.filter((k): k is string => typeof k === 'string' && !!k.trim()).map((k) => k.toLowerCase().replace(/[^a-z0-9' ]/g, ' ').replace(/\s+/g, ' ').trim()).filter(Boolean) : [];
+      const goal = { id: (g.id as string).slice(0, 30), label: (g.label as string).slice(0, 80), pt: typeof g.pt === 'string' ? g.pt.slice(0, 160) : '', example, starter: typeof g.starter === 'string' ? g.starter.slice(0, 60) : `${example.split(' ').slice(0, 3).join(' ')}…`, detect: [kws.slice(0, 8)] };
+      // garantia: o exemplo precisa acender o próprio objetivo; senão usa palavras do exemplo
+      if (!goal.detect[0].length || !goalMet(goal, example)) goal.detect = [example.toLowerCase().replace(/[^a-z' ]/g, ' ').split(/\s+/).filter((w) => w.length > 4).slice(0, 3)];
+      return goal;
+    })
+    .filter((g) => g.detect[0].length > 0);
+  const ids = new Set(goals.map((g) => g.id));
+  const beats = (r.beats as { say?: unknown; pt?: unknown; wants?: unknown; nudge?: unknown }[])
+    .filter((b) => typeof b.say === 'string' && b.say.trim())
+    .slice(0, 5)
+    .map((b) => ({ say: (b.say as string).slice(0, 240), pt: typeof b.pt === 'string' ? b.pt.slice(0, 240) : '', wants: Array.isArray(b.wants) ? b.wants.filter((w): w is string => typeof w === 'string' && ids.has(w)) : [], nudge: typeof b.nudge === 'string' && b.nudge.trim() ? b.nudge.slice(0, 200) : 'Could you tell me a bit more?' }));
+  if (goals.length < 3 || beats.length < 2) return null;
+  // todo objetivo precisa ser pedido por alguma fala
+  const wanted = new Set(beats.flatMap((b) => b.wants));
+  goals.forEach((g, i) => { if (!wanted.has(g.id)) beats[Math.min(i, beats.length - 1)].wants.push(g.id); });
+  return {
+    id: `meu-${Date.now().toString(36)}`,
+    area: r.area === 'vida' ? 'vida' : 'trabalho',
+    tags: [],
+    title: r.title.slice(0, 60),
+    setting: typeof r.setting === 'string' ? r.setting.slice(0, 320) : description.slice(0, 320),
+    character: { name: typeof r.character?.name === 'string' ? r.character.name.slice(0, 20) : 'Alex', role: typeof r.character?.role === 'string' ? r.character.role.slice(0, 40) : 'colega', color: '#5b3fa8', voice: 0 },
+    goals,
+    beats,
+    closing: typeof r.closing === 'string' && r.closing.trim() ? r.closing.slice(0, 200) : 'Great, thanks. Talk to you soon!',
+  };
 }

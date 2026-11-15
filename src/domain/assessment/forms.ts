@@ -22,7 +22,7 @@ export interface CheckItem {
 }
 
 export interface CheckForm {
-  id: 'A' | 'B' | 'C';
+  id: 'A' | 'B' | 'C' | 'D' | 'E' | 'F';
   items: CheckItem[];
   prompts: { en: string; pt: string }[];
 }

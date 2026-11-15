@@ -3,6 +3,8 @@ import { dayKey, levelFor } from '../../domain/motivation/motivation';
 import { questsFor } from '../../domain/motivation/quests';
 import { checkpointSchedule, nextCheckpoint, phaseOf, PLAN_WEEKS, weekOf } from '../../domain/plan/sixMonths';
 import { emptyDay } from '../../domain/progress/daily';
+import { dueErrors } from '../../domain/coach/errorBank';
+import { ERROR_CATEGORIES, errorProfile } from '../../domain/production/errors';
 import { dueDrillCount } from '../../domain/production/ladder';
 import { dueItemIds } from '../../domain/srs/scheduler';
 import { ProgressRing } from '../components/Graphics';
@@ -45,6 +47,8 @@ export function Dashboard({ go }: { go: (r: Route) => void }) {
     { label: `Simulação do dia a dia (${mayaTarget} min)`, sub: `${Math.round(d.mayaSec / 60)} min de conversa hoje`, done: d.mayaSec >= mayaTarget * 60, go: { name: 'missions' } },
   ];
   const doneSteps = steps.filter((s) => s.done).length;
+  const errDue = dueErrors(state.errorBank, Date.now(), 99).length;
+  const topErr = errorProfile(state.errorLog.slice(0, 80))[0];
 
   return (
     <main className="shell dash" id="main">
@@ -89,7 +93,16 @@ export function Dashboard({ go }: { go: (r: Route) => void }) {
               </li>
             ))}
           </ol>
+          <button className="link-btn" onClick={() => go({ name: 'practice', lessonId: 'rapido' })}>Dia corrido? Faça só 5 frases (3 minutos) para não quebrar o ritmo</button>
         </section>
+
+        {(errDue > 0 || topErr) && (
+          <button className="tile" onClick={() => go(errDue > 0 ? { name: 'errors' } : { name: 'practice', lessonId: 'erros' })}>
+            <span className="ex-kicker">Seus erros reais</span>
+            <strong className="tile-title">{errDue > 0 ? `${errDue} erro(s) seus para consertar` : `Seu erro nº 1: ${ERROR_CATEGORIES[topErr!.id]?.title ?? topErr!.id}`}</strong>
+            <span className="muted">{errDue > 0 ? 'Trechos que você disse errado em conversas, de volta na hora certa para você dizer do jeito certo.' : 'Treino de 3 minutos só com frases dessa estrutura.'}</span>
+          </button>
+        )}
 
         {next && (
           <button className="tile tile-main" onClick={() => go({ name: 'lesson', id: next.id })}>
@@ -110,7 +123,7 @@ export function Dashboard({ go }: { go: (r: Route) => void }) {
         <button className="tile" onClick={() => go({ name: 'missions' })}>
           <span className="ex-kicker">Vida real</span>
           <strong className="tile-title">Simulações do dia a dia</strong>
-          <span className="muted">{Object.keys(state.sim.results).length ? `${Object.keys(state.sim.results).length} de 10 feitas. ` : ''}Daily, reunião, gerente, cliente, restaurante: o personagem reage ao que você diz.</span>
+          <span className="muted">{Object.keys(state.sim.results).length ? `${Object.keys(state.sim.results).length} de 20 feitas. ` : ''}Daily, reunião, gerente, cliente, restaurante: o personagem reage ao que você diz.</span>
         </button>
 
         <button className="tile tile-teacher" onClick={() => go({ name: 'teacher' })}>

@@ -11,6 +11,10 @@
 import { checkTyped, normalize } from '../practice/answer';
 import { detectErrors } from '../production/errors';
 import { FORMS, type CheckCategory, type CheckForm, type CheckItem } from './forms';
+import { FORMS_EXTRA } from './forms2';
+
+/** Seis formas paralelas: com um checkpoint a cada 4 semanas, nenhuma se repete em menos de 24 semanas. */
+export const ALL_FORMS: CheckForm[] = [...FORMS, ...FORMS_EXTRA];
 
 export interface ItemResult {
   id: string;
@@ -56,12 +60,12 @@ export interface CheckpointResult {
   rubric?: { errorsPer100?: number; cefr?: string; comment?: string };
 }
 
-/** Formas giram A → B → C → A: nunca a mesma em checkpoints seguidos. */
+/** Formas giram A → B → … → F → A: nunca a mesma em checkpoints seguidos. */
 export function nextForm(history: Pick<CheckpointResult, 'form'>[]): CheckForm {
-  const order: CheckForm['id'][] = ['A', 'B', 'C'];
+  const order = ALL_FORMS.map((f) => f.id);
   const last = history[history.length - 1]?.form;
-  const id = last ? order[(order.indexOf(last) + 1) % 3] : 'A';
-  return FORMS.find((f) => f.id === id)!;
+  const id = last ? order[(order.indexOf(last) + 1) % order.length] : 'A';
+  return ALL_FORMS.find((f) => f.id === id)!;
 }
 
 export function scoreItem(item: CheckItem, said: string, timing: { totalMs: number; thinkMs: number }, spoken: boolean): ItemResult {
@@ -190,6 +194,6 @@ export function reportText(history: CheckpointResult[], name: string): string {
     const d = compare(base, last);
     lines.push('', `Evolução desde a linha de base: índice ${d.index >= 0 ? '+' : ''}${d.index}, precisão ${d.accuracyPts >= 0 ? '+' : ''}${d.accuracyPts} pts, ${d.secPerWord <= 0 ? '' : '+'}${d.secPerWord} s/palavra, ${d.wpm >= 0 ? '+' : ''}${d.wpm} palavras/min.${d.comparable ? '' : ' (modalidades diferentes: comparação aproximada)'}`);
   }
-  lines.push('', 'Método: 12 frases PT→EN nunca treinadas (formas A/B/C em rodízio) + 2 falas livres de 45 s. Índice = 45% precisão + 25% velocidade + 30% fluência. Métrica interna, não é certificado CEFR.');
+  lines.push('', 'Método: 12 frases PT→EN nunca treinadas (formas A a F em rodízio) + 2 falas livres de 45 s. Índice = 45% precisão + 25% velocidade + 30% fluência. Métrica interna, não é certificado CEFR.');
   return lines.join('\n');
 }

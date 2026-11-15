@@ -488,15 +488,149 @@ const RULES: Rule[] = [
     clue: '"Ficar" (mudar de estado) não é "stay".',
     explain: '"Fiquei nervoso" = "I got nervous". "Stay" = permanecer num lugar ou estado.',
   },
+
+  /* ---------- mais padrões frequentes ---------- */
+  {
+    id: 'have-doubt', cat: 'false-friend',
+    re: /\b(have|has|had|got) (a|some|any|one|two|many|a few) (doubts?)\b/gd,
+    fix: (m) => `${m[1]} ${m[2]} ${m[3] === 'doubt' ? 'question' : 'questions'}`,
+    clue: '"Dúvida" numa reunião não é "doubt".',
+    explain: '"Tenho uma dúvida" = "I have a question". "Doubt" é desconfiança.',
+  },
+  {
+    id: 'how-call', cat: 'collocation',
+    re: /\bhow (do|did|does) (you|we|they|people) call (this|that|it|these|those)\b/gd,
+    fix: (m) => `what ${m[1]} ${m[2]} call ${m[3]}`,
+    clue: '"Como chama" em inglês não começa com "how".',
+    explain: '"Como você chama isso?" = "What do you call this?".',
+  },
+  {
+    id: 'prep-adjective', cat: 'preposition',
+    re: /\b(responsible) (of|by)\b|\b(interested) (on|for|with)\b|\b(different) (of)\b|\b(participat(?:e|ed|es|ing)) (of)\b|\b(good|bad|great|terrible) (in|on)(?= (?:math|english|python|sql|this|that|it|programming|sports|cooking)\b)/gd,
+    fix: (m) => (m[1] ? 'responsible for' : m[3] ? 'interested in' : m[5] ? 'different from' : m[7] ? `${m[7]} in` : `${m[9]} at`),
+    clue: 'A preposição depois dessa palavra não é a do português.',
+    explain: 'Responsible for, interested in, different from, participate in, good at.',
+  },
+  {
+    id: 'think-in', cat: 'preposition',
+    re: /\b(think|thinking|thought) in (you|him|her|it|that|this|the|my|a|doing|going|changing)\b/gd,
+    fix: (m) => `${m[1]} about ${m[2]}`,
+    clue: '"Pensar em" não é "think in".',
+    explain: '"Pensar em algo" = "think about" (ou "think of").',
+  },
+  {
+    id: 'work-in-home', cat: 'preposition',
+    re: /\b(work|works|worked|working) in home\b/gd,
+    fix: (m) => `${m[1]} from home`,
+    clue: 'Trabalhar "em casa" usa outra preposição.',
+    explain: '"Trabalho de casa" = "I work from home".',
+  },
+  {
+    id: 'all-days', cat: 'collocation',
+    re: /\b(all the days|all days|every days|all the day)\b/gd,
+    fix: (m) => (m[1] === 'all the day' ? 'all day' : 'every day'),
+    clue: '"Todos os dias" tem uma forma fixa em inglês.',
+    explain: '"Todo dia / todos os dias" = "every day". "O dia todo" = "all day".',
+  },
+  {
+    id: 'today-night', cat: 'collocation',
+    re: /\b(today night|today at night|today in the night|yesterday night|yesterday at night)\b/gd,
+    fix: (m) => (m[1].startsWith('today') ? 'tonight' : 'last night'),
+    clue: '"Hoje à noite" e "ontem à noite" são uma palavra/expressão própria.',
+    explain: '"Hoje à noite" = "tonight". "Ontem à noite" = "last night".',
+  },
+  {
+    id: 'for-me-is', cat: 'missing-subject',
+    re: /\bfor (me|us|him|her|them) (is|was)\b/gd,
+    fix: (m) => `for ${m[1]} it ${m[2]}`,
+    clue: 'Depois de "for me" ainda falta o sujeito do verbo.',
+    explain: '"Para mim é difícil" = "For me, it is difficult".',
+  },
+  {
+    id: 'exist-start', cat: 'there-is', g: 1,
+    re: mk(r`${START}(exists? (a|an|one|many|some|two|three|no|a lot of))\b`),
+    fix: (m) => `${/^(a|an|one|no)$/.test(m[2]) ? 'there is' : 'there are'} ${m[2]}`,
+    clue: '"Existe / existem" no começo da frase não é "exist".',
+    explain: '"Existem muitas formas" = "There are many ways".',
+  },
+  {
+    id: 'stative-ing', cat: 'verb-pattern',
+    re: /\b(i am|i'm|we are|we're|you are|you're|they are|they're|he is|she is) (understanding|knowing|wanting|needing|liking|believing|agreeing|preferring)\b/gd,
+    fix: (m) => {
+      const subj = m[1].split(/[ ']/)[0];
+      const base = { understanding: 'understand', knowing: 'know', wanting: 'want', needing: 'need', liking: 'like', believing: 'believe', agreeing: 'agree', preferring: 'prefer' }[m[2]]!;
+      return `${subj} ${/^(he|she)$/.test(subj) ? s3(base) : base}`;
+    },
+    clue: 'Esse verbo quase nunca aparece com -ing.',
+    explain: 'Verbos de estado (understand, know, want, need, like) ficam no presente simples: "I understand", não "I am understanding".',
+  },
+  {
+    id: 'go-to-there', cat: 'preposition',
+    re: /\b(go|went|going|goes|come|came|coming|get|got) to (there|here)\b/gd,
+    fix: (m) => `${m[1]} ${m[2]}`,
+    clue: 'Tem uma palavra sobrando antes de "there / here".',
+    explain: 'Here e there não levam "to": "go there", "come here".',
+  },
+  {
+    id: 'ask-for-to', cat: 'verb-pattern',
+    re: /\bask(ed|s|ing)? for (him|her|them|me|you|us) to\b/gd,
+    fix: (m) => `ask${m[1] ?? ''} ${m[2]} to`,
+    clue: '"Pedir para alguém fazer" não leva "for".',
+    explain: '"Pedi para ele revisar" = "I asked him to review".',
+  },
+  {
+    id: 'make-meeting', cat: 'collocation',
+    re: /\b(make|made|making) (a|the|another) (meeting|call|reunion)\b/gd,
+    fix: (m) => `${{ make: 'have', made: 'had', making: 'having' }[m[1]]} ${m[2]} ${m[3] === 'reunion' ? 'meeting' : m[3]}`,
+    clue: 'Reunião não se "faz" com make.',
+    explain: '"Fazer uma reunião" = "have a meeting" (ou "schedule a meeting").',
+  },
+  {
+    id: 'a-news', cat: 'uncountable',
+    re: /\b(a|an|one) (good |bad |great )?news\b/gd,
+    fix: (m) => `some ${m[2] ?? ''}news`,
+    clue: '"News" não aceita "a".',
+    explain: '"Uma notícia" = "some news" ou "a piece of news".',
+  },
+  {
+    id: 'thanks-god', cat: 'collocation',
+    re: /\bthanks god\b/gd,
+    fix: () => 'thank God',
+    clue: 'Essa expressão não leva -s.',
+    explain: '"Graças a Deus" = "thank God".',
+  },
+  {
+    id: 'know-place', cat: 'false-friend',
+    re: /\b(know|knew|to know) (new places|new countries|other countries|the city|paris|london|new york|europe|portugal|canada)\b/gd,
+    fix: (m) => `${{ know: 'visit', knew: 'visited', 'to know': 'to visit' }[m[1]]} ${m[2]}`,
+    clue: '"Conhecer" um lugar não é "know".',
+    explain: '"Conhecer um lugar" = "visit" ou "go to". "Know" é saber ou conhecer pessoas.',
+  },
 ];
 
 const prep = (text: string) => text.toLowerCase().replace(/[’‘`´]/g, "'");
+
+/**
+ * Regras silenciadas pelo próprio aluno ("não era erro" duas vezes): o detector
+ * aprende com o uso real e para de marcar o que marca errado para aquela pessoa.
+ */
+let muted = new Set<string>();
+export const MUTE_AFTER = 2;
+export function setMutedRules(ids: Iterable<string>): void {
+  muted = new Set(ids);
+}
+export const mutedFrom = (fp: Record<string, number>) => Object.entries(fp).filter(([, n]) => n >= MUTE_AFTER).map(([id]) => id);
+export const ruleInfo = (id: string) => {
+  const r = RULES.find((x) => x.id === id);
+  return r ? { id, cat: r.cat, explain: r.explain } : null;
+};
 
 /** Marca erros típicos em fala livre. Retorna trechos sem sobreposição, em ordem. */
 export function spot(text: string): Spot[] {
   const low = prep(text);
   const found: Spot[] = [];
   for (const rule of RULES) {
+    if (muted.has(rule.id)) continue;
     rule.re.lastIndex = 0;
     let m: RegExpExecArray | null;
     while ((m = rule.re.exec(low))) {

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { applyFix, corrected, RULE_COUNT, spot } from './spotter';
+import { applyFix, corrected, mutedFrom, ruleInfo, RULE_COUNT, setMutedRules, spot } from './spotter';
 import { autonomy, nextLevel, repaired, startLevel, type Issue } from './mediation';
 
 const rules = (t: string) => spot(t).map((s) => s.rule);
@@ -67,6 +67,26 @@ describe('Detector de fala livre: acertos', () => {
     ['I pretend to travel next year', 'pretend', 'I intend to travel next year'],
     ['I assisted a movie', 'assist-watch', 'I watched a movie'],
     ['I stayed nervous', 'stay-feeling', 'I got nervous'],
+    ['I have a doubt', 'have-doubt', 'I have a question'],
+    ['how do you call this', 'how-call', 'what do you call this'],
+    ['I am responsible of the pipeline', 'prep-adjective', 'I am responsible for the pipeline'],
+    ['I am interested on this role', 'prep-adjective', 'I am interested in this role'],
+    ['it is different of the old one', 'prep-adjective', 'it is different from the old one'],
+    ['I participated of the meeting', 'prep-adjective', 'I participated in the meeting'],
+    ['she is good in python', 'prep-adjective', 'she is good at python'],
+    ['I am thinking in changing jobs', 'think-in', 'I am thinking about changing jobs'],
+    ['I work in home', 'work-in-home', 'I work from home'],
+    ['I study all the days', 'all-days', 'I study every day'],
+    ['we have a call today night', 'today-night', 'we have a call tonight'],
+    ['for me is difficult', 'for-me-is', 'for me it is difficult'],
+    ['exist many ways to do it', 'exist-start', 'there are many ways to do it'],
+    ['I am understanding the problem', 'stative-ing', 'I understand the problem'],
+    ['I went to there last year', 'go-to-there', 'I went there last year'],
+    ['I asked for him to review it', 'ask-for-to', 'I asked him to review it'],
+    ['we made a meeting', 'make-meeting', 'we had a meeting'],
+    ['I have a good news', 'a-news', 'I have some good news'],
+    ['thanks god it worked', 'thanks-god', 'thank God it worked'],
+    ['I want to know new places', 'know-place', 'I want to visit new places'],
   ];
   for (const [input, rule, out] of cases) {
     it(`${rule}: "${input}"`, () => {
@@ -77,6 +97,7 @@ describe('Detector de fala livre: acertos', () => {
   it(`cobre ${RULE_COUNT} regras`, () => {
     const covered = new Set(cases.map((c) => c[1]));
     expect(covered.size).toBeGreaterThanOrEqual(RULE_COUNT - 6);
+    expect(RULE_COUNT).toBeGreaterThanOrEqual(70);
   });
 });
 
@@ -122,8 +143,35 @@ describe('Detector de fala livre: não marca inglês correto', () => {
     'I am 30 years old',
     'Tell me about yourself',
     'I talked to him and called her',
+    'I have a question about the deadline',
+    'What do you call this in English?',
+    'I am responsible for the pipeline and interested in this role',
+    'She is good at Python',
+    'I am thinking about changing jobs',
+    'I work from home every day',
+    'We have a call tonight',
+    'For me, it is difficult',
+    'There are many ways to do it',
+    'I understand the problem and I know him',
+    'I went there last year and I asked him to review it',
+    'We had a meeting and I have some good news',
+    'I doubt that it will work',
+    'I think in English when I work',
+    'How do you call the API from the client?',
   ];
   for (const s of ok) it(`"${s}"`, () => expect(spot(s)).toEqual([]));
+});
+
+describe('Regras silenciadas pelo aluno', () => {
+  it('silencia depois de 2 avisos e volta a marcar quando reativada', () => {
+    expect(mutedFrom({ 'third-person': 1, age: 2 })).toEqual(['age']);
+    setMutedRules(['third-person']);
+    expect(spot('she work at a bank')).toEqual([]);
+    expect(rules('I have 30 years')).toContain('age');
+    setMutedRules([]);
+    expect(rules('she work at a bank')).toContain('third-person');
+    expect(ruleInfo('age')?.cat).toBe('be-have');
+  });
 });
 
 describe('Posições e correção', () => {

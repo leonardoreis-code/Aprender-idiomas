@@ -2,6 +2,7 @@ import { useState } from 'react';
 import type { AppState, Settings as S } from '../../infra/storage';
 import { ACHIEVEMENTS } from '../../domain/motivation/motivation';
 import { BackIcon } from '../icons/ui';
+import { BackupPanel } from './Learning';
 
 interface Props {
   state: AppState;
@@ -88,6 +89,8 @@ export function Settings({ state, onChange, onGoal, onReset, onBack }: Props) {
           );
         })}
       </ul>
+
+      <BackupPanel />
 
       <div style={{ marginTop: 28 }}>
         <ResetButton onReset={onReset} />

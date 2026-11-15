@@ -32,8 +32,8 @@ import { Monologue, MySentences } from './ui/screens/Extras';
 import { LiveCoach } from './ui/screens/LiveCoach';
 import { DelayedEcho, Fluency, Lab, Retell } from './ui/screens/Methods';
 import { MissionPlayer, MissionsHub } from './ui/screens/Missions';
-import { findMission } from './content/missions';
 import { isArtifact } from './infra/platform';
+import { ErrorReview, PRETEST_INDEXES } from './ui/screens/Learning';
 import { Logo } from './ui/icons/ui';
 import { NavIcon } from './ui/components/NavIcon';
 
@@ -91,7 +91,7 @@ function Shell() {
   const screen = <Screen route={route} go={go} />;
   if (immersive) return <>{screen}<Toasts /></>;
 
-  const active = (r: Route) => r.name === route.name || (r.name === 'course' && ['lesson', 'video', 'stories', 'story', 'base'].includes(route.name)) || (r.name === 'lab' && ['teacher', 'fluency', 'retell', 'echo', 'monologue', 'mine', 'accent', 'missions', 'mission'].includes(route.name)) || (r.name === 'profile' && route.name === 'settings');
+  const active = (r: Route) => r.name === route.name || (r.name === 'course' && ['lesson', 'video', 'stories', 'story', 'base'].includes(route.name)) || (r.name === 'lab' && ['teacher', 'fluency', 'retell', 'echo', 'monologue', 'mine', 'accent', 'missions', 'mission', 'errors', 'drill'].includes(route.name)) || (r.name === 'profile' && route.name === 'settings') || (r.name === 'evolution' && ['weekly', 'checkpoint'].includes(route.name));
   return (
     <div className="app">
       <a href="#main" className="skip">Pular para o conteúdo</a>
@@ -178,10 +178,12 @@ function Screen({ route, go }: { route: Route; go: (r: Route) => void }) {
       return <Retell go={go} />;
     case 'echo':
       return <DelayedEcho go={go} />;
+    case 'errors':
+      return <ErrorReview go={go} />;
     case 'missions':
       return <MissionsHub go={go} />;
     case 'mission':
-      return findMission(route.id) ? <MissionPlayer key={route.id} id={route.id} go={go} /> : <MissionsHub go={go} />;
+      return <MissionPlayer key={route.id} id={route.id} go={go} />;
     default:
       return <Dashboard go={go} />;
   }
@@ -192,7 +194,7 @@ function PracticeRoute({ lessonId, go }: { lessonId?: string; go: (r: Route) => 
   const store = useStore();
   const { production, custom, errorLog } = store.state;
   const lesson = lessonId ? findSpeakingLesson(lessonId) : undefined;
-  const mode = lesson ? 'lesson' : lessonId === 'erros' ? 'errors' : lessonId === 'minhas' ? 'mine' : 'mix';
+  const mode = lesson ? 'lesson' : lessonId === 'erros' ? 'errors' : lessonId === 'minhas' ? 'mine' : lessonId === 'rapido' ? 'quick' : 'mix';
   const { queue, pool, title } = useMemo(() => {
     if (lesson) return { title: lesson.title, pool: lesson.drills, queue: buildProductionQueue(lesson.drills, production, { max: 14, newLimit: 12, focusIds: lesson.drills.map((d) => d.id) }) };
     if (mode === 'errors') {
@@ -207,6 +209,8 @@ function PracticeRoute({ lessonId, go }: { lessonId?: string; go: (r: Route) => 
     const started = new Set(Object.keys(production).map((id) => id.replace(/-d\d+$/, '')));
     const seen = allDrills.filter((d) => started.has(d.id.replace(/-d\d+$/, '')));
     const all = [...(seen.length ? seen : allDrills.slice(0, 12)), ...custom];
+    // dia corrido: 5 frases, só o que está para ser esquecido
+    if (mode === 'quick') return { title: 'Dia corrido: 5 frases', pool: [...allDrills, ...custom], queue: buildProductionQueue(all, production, { max: 5, newLimit: 2 }) };
     return { title: 'Pense em inglês', pool: [...allDrills, ...custom], queue: buildProductionQueue(all, production, { max: 12, newLimit: 4 }) };
   }, [lessonId]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -231,6 +235,12 @@ function PracticeRoute({ lessonId, go }: { lessonId?: string; go: (r: Route) => 
         if (lesson) {
           // domínio: a aula só conta como concluída com ≥ 70% de acerto na primeira tentativa
           const acc = firstTryAccuracy(attempts);
+          // as mesmas 3 frases do "Tente antes": quantas saíram certas de primeira agora
+          const preIds = PRETEST_INDEXES.map((k) => lesson.drills[k]?.id);
+          const firstOk = new Map<string, boolean>();
+          for (const a of attempts) if (!firstOk.has(a.drillId)) firstOk.set(a.drillId, a.correct);
+          const post = preIds.filter((id) => id && firstOk.get(id)).length;
+          if (preIds.some((id) => id && firstOk.has(id))) store.set((s) => ({ ...s, lessons: { ...s.lessons, [lesson.id]: { ...s.lessons[lesson.id], post } } }));
           if (acc >= 0.7) {
             store.set((s) => ({ ...s, lessons: { ...s.lessons, [lesson.id]: { ...s.lessons[lesson.id], practice: true, article: true } } }));
             store.track('lessons');

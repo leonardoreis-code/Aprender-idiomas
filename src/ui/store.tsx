@@ -4,6 +4,9 @@ import { bump, claimable, type QuestMetric } from '../domain/motivation/quests';
 import { applyProduction, type ProductionAttempt } from '../domain/production/ladder';
 import { loadState, saveState, type AppState } from '../infra/storage';
 import { addDay, type DayStats } from '../domain/progress/daily';
+import { addErrors as addToBank } from '../domain/coach/errorBank';
+import type { Issue } from '../domain/coach/mediation';
+import { mutedFrom, setMutedRules } from '../domain/coach/spotter';
 import { setSfxEnabled } from '../infra/sfx';
 
 /** Store da aplicação: um único estado persistido + casos de uso que o alteram. */
@@ -17,6 +20,10 @@ interface Store {
   recordAccent: (rules: string[]) => void;
   /** Soma medidas do dia (segundos falando, Maya, fala livre…). */
   logDay: (patch: Partial<DayStats>) => void;
+  /** Guarda erros reais da fala no banco pessoal (voltam com repetição espaçada). */
+  bankErrors: (issues: Issue[], utterance: string) => void;
+  /** "Não era erro": depois de 2 avisos a regra para de marcar para este aluno. */
+  reportFp: (rule: string) => void;
   toast: (t: Toast) => void;
   toasts: Toast[];
 }
@@ -60,6 +67,10 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     else root.removeAttribute('data-contrast');
     setSfxEnabled(s.sound);
   }, [state.settings]);
+
+  // regras silenciadas pelo aluno valem para todo o app
+  const mutedKey = mutedFrom(state.fp).join(',');
+  setMutedRules(mutedKey ? mutedKey.split(',') : []);
 
   const toast = useCallback((t: Toast) => {
     const id = Date.now() + Math.random();
@@ -155,6 +166,19 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
+  const bankErrors = useCallback((issues: Issue[], utterance: string) => {
+    if (issues.length) setState((s) => ({ ...s, errorBank: addToBank(s.errorBank, issues, utterance) }));
+  }, []);
+
+  const reportFp = useCallback(
+    (rule: string) => {
+      if (rule.startsWith('ai:')) return;
+      setState((s) => ({ ...s, fp: { ...s.fp, [rule]: (s.fp[rule] ?? 0) + 1 }, errorBank: s.errorBank.filter((c) => c.rule !== rule || !!c.card) }));
+      toast({ title: 'Anotado', body: 'Com 2 avisos, essa regra para de marcar para você.', kind: 'info' });
+    },
+    [toast],
+  );
+
   const logDay = useCallback((patch: Partial<DayStats>) => {
     setState((s) => ({ ...s, daily: addDay(s.daily, dayKey(), patch) }));
   }, []);
@@ -168,8 +192,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const value = useMemo(
-    () => ({ state, set, gainXp, track, recordProduction, recordAccent, logDay, toast, toasts }),
-    [state, set, gainXp, track, recordProduction, recordAccent, logDay, toast, toasts],
+    () => ({ state, set, gainXp, track, recordProduction, recordAccent, logDay, bankErrors, reportFp, toast, toasts }),
+    [state, set, gainXp, track, recordProduction, recordAccent, logDay, bankErrors, reportFp, toast, toasts],
   );
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

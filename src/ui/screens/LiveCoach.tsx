@@ -124,8 +124,9 @@ export function LiveCoach({ go, lessonId, scenarioId }: { go: (r: Route) => void
     // chamado direto no clique: o ditado do artefato exige o gesto do usuário
     const s = startLive({ onText: setLiveText, silenceMs: 2600, maxMs: 75000 });
     session.current = s;
-    void s.done.then(({ text, ms }) => {
+    void s.done.then(({ text, ms, pauses }) => {
       session.current = null;
+      if (text.trim() && ms > 4000) store.logDay({ pauses, pauseMin: ms / 60000 });
       if (!text.trim()) {
         setNote('Não ouvi nada. Toque no microfone e tente de novo, ou responda digitando.');
         setPhase(prev === 'repair' ? 'repair' : 'idle');
@@ -174,7 +175,10 @@ export function LiveCoach({ go, lessonId, scenarioId }: { go: (r: Route) => void
     }
     setUpgrade(up);
     if (up) st.upgrades.push({ from: up.from, to: up.to });
-    if (all.length) store.set((s) => ({ ...s, errorLog: [all.map((i) => i.cat), ...s.errorLog].slice(0, 300) }));
+    if (all.length) {
+      store.set((s) => ({ ...s, errorLog: [all.map((i) => i.cat), ...s.errorLog].slice(0, 300) }));
+      store.bankErrors(all, text);
+    }
     // trabalha no máximo 2 pontos por fala: mais do que isso vira aula, não conversa
     const work = all.slice(0, 2);
     setIssues(all);
@@ -410,6 +414,7 @@ export function LiveCoach({ go, lessonId, scenarioId }: { go: (r: Route) => void
           <div className="row" style={{ justifyContent: 'center' }}>
             {level < 4 && <button className="btn btn-ghost" onClick={moreHelp}>Preciso de mais ajuda</button>}
             <button className="link-btn" onClick={() => { record(issue, 5); advanceIssue(); }}>Pular este ponto</button>
+            {issue.source === 'rule' && <button className="link-btn" onClick={() => { store.reportFp(issue.rule); advanceIssue(); }}>Não era erro</button>}
           </div>
           {tries > 0 && level < 4 && <small className="muted">Tentativa {tries + 1}.</small>}
         </section>

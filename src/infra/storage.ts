@@ -6,6 +6,8 @@ import type { CheckpointResult } from '../domain/assessment/checkpoint';
 import type { Daily } from '../domain/progress/daily';
 import type { Drill } from '../domain/curriculum/speaking';
 import type { RepairRecord } from '../domain/coach/mediation';
+import type { ErrorCard } from '../domain/coach/errorBank';
+import type { Mission } from '../domain/sim/engine';
 import { DEFAULT_CONTEXT, type SimContext } from '../domain/sim/engine';
 
 export type LearnerLevel = 'zero' | 'fala' | 'avancado';
@@ -19,6 +21,9 @@ export interface Profile {
 }
 
 export interface LessonProgress {
+  /** Acertos no "Tente antes" (de 3) e nas mesmas 3 frases depois da prática. */
+  pre?: number;
+  post?: number;
   video?: boolean;
   article?: boolean;
   practice?: boolean;
@@ -74,6 +79,10 @@ export interface AppState {
   repairs: RepairRecord[];
   coach: { liveMarks: boolean; echoBest: number };
   /** Simulações do dia a dia. */
+  /** Erros reais do aluno, com repetição espaçada. */
+  errorBank: ErrorCard[];
+  /** Avisos de "não era erro" por regra do detector. */
+  fp: Record<string, number>;
   /** Recordes e contadores simples dos treinos curtos (chave livre, valor numérico). */
   bests: Record<string, number>;
   /** Histórias STAR do aluno para entrevistas. */
@@ -83,6 +92,8 @@ export interface AppState {
     today: { day: string; tags: string[] };
     handsFree: boolean;
     results: Record<string, { stars: number; plays: number; at: number }>;
+    /** Simulações criadas a partir do dia real do aluno. */
+    custom: Mission[];
   };
 }
 
@@ -115,9 +126,11 @@ export const defaultState = (): AppState => ({
   custom: [],
   repairs: [],
   coach: { liveMarks: true, echoBest: 0 },
+  errorBank: [],
+  fp: {},
   bests: {},
   starStories: [],
-  sim: { context: { ...DEFAULT_CONTEXT }, today: { day: '', tags: [] }, handsFree: false, results: {} },
+  sim: { context: { ...DEFAULT_CONTEXT }, today: { day: '', tags: [] }, handsFree: false, results: {}, custom: [] },
 });
 
 export function loadState(): AppState {

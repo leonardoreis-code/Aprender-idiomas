@@ -24,6 +24,9 @@ export type Route =
   | { name: 'fluency' }
   | { name: 'retell' }
   | { name: 'echo' }
+  | { name: 'errors' }
+  | { name: 'weekly' }
+  | { name: 'drill'; id: string }
   | { name: 'missions' }
   | { name: 'mission'; id: string };
 
@@ -56,6 +59,9 @@ export function parse(hash: string): Route {
     case 'fluencia': return { name: 'fluency' };
     case 'reconto': return { name: 'retell' };
     case 'eco': return { name: 'echo' };
+    case 'meus-erros': return { name: 'errors' };
+    case 'semana': return { name: 'weekly' };
+    case 'treino': return b ? { name: 'drill', id: b } : { name: 'lab' };
     case 'simulacoes': return { name: 'missions' };
     case 'simulacao': return b ? { name: 'mission', id: b } : { name: 'missions' };
     default: return { name: 'home' };
@@ -84,6 +90,9 @@ export function toHash(r: Route): string {
     case 'fluency': return '#fluencia';
     case 'retell': return '#reconto';
     case 'echo': return '#eco';
+    case 'errors': return '#meus-erros';
+    case 'weekly': return '#semana';
+    case 'drill': return `#treino--${r.id}`;
     case 'missions': return '#simulacoes';
     case 'mission': return `#simulacao--${r.id}`;
   }

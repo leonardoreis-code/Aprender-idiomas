@@ -85,6 +85,7 @@ export function Evolution({ go }: { go: (r: Route) => void }) {
                 ? cps.length === 0 ? 'Faça agora o checkpoint inicial (8 min): ele define sua linha de base.' : `Checkpoint da semana ${next.week} liberado.`
                 : `Próximo checkpoint: semana ${next.week}${start ? ` (por volta de ${brDate(dayKey(new Date(new Date(start + 'T12:00:00').getTime() + next.week * 7 * 86_400_000)))})` : ''}.`}
             </span>
+            <button className="btn btn-ghost" onClick={() => go({ name: 'weekly' })}>Revisão da semana</button>
             <button className={`btn ${next.status === 'due' ? 'btn-primary' : 'btn-ghost'}`} onClick={() => go({ name: 'checkpoint' })}>{next.status === 'due' ? 'Fazer checkpoint' : 'Fazer um extra agora'}</button>
           </div>
         )}
@@ -147,6 +148,16 @@ export function Evolution({ go }: { go: (r: Route) => void }) {
             <p className="fine">Erros apontados pelo treinador que você consertou sem ver a resposta. Subir aqui significa precisar de menos ajuda para o mesmo erro.</p>
           </div>
           <div>
+            <h3>Tempo para começar a responder (s)</h3>
+            <LineChart title="Tempo de resposta" unit="s" points={weeks.map((w) => ({ label: w.label, value: w.latency }))} yMin={0} lowerIsBetter />
+            <p className="fine">Medido no treino Resposta rápida. Em conversa real, começar em até 2 segundos soa natural.</p>
+          </div>
+          <div>
+            <h3>Pausas longas por minuto de fala</h3>
+            <LineChart title="Pausas longas por minuto" points={weeks.map((w) => ({ label: w.label, value: w.pausesPerMin }))} yMin={0} lowerIsBetter />
+            <p className="fine">Pausas acima de 1,5 s no treinador, nas simulações, no reconto e na fluência. Valor aproximado: depende do ritmo do reconhecedor de fala.</p>
+          </div>
+          <div>
             <h3>Segundos por palavra nas frases faladas</h3>
             <LineChart title="Segundos por palavra na prática" unit="s" points={weeks.map((w) => ({ label: w.label, value: w.secPerWord }))} yMin={0} lowerIsBetter />
           </div>
@@ -158,8 +169,8 @@ export function Evolution({ go }: { go: (r: Route) => void }) {
         </div>
         <DataTable
           summary="Ver semanas como tabela"
-          head={['Semana de', 'Min falando', 'Min de conversa', 'Frases faladas', 'Retenção', 'Autocorreção', 's/palavra', 'Palavras/min', 'Dias ativos']}
-          rows={weeks.map((w) => [w.label, w.speakMin, w.mayaMin, w.spoken, w.retention === null ? '—' : `${w.retention}%`, w.selfRepair === null ? '—' : `${w.selfRepair}%`, w.secPerWord ?? '—', w.wpm ?? '—', w.activeDays])}
+          head={['Semana de', 'Min falando', 'Min de conversa', 'Frases faladas', 'Retenção', 'Autocorreção', 's/palavra', 'Palavras/min', 'Resposta (s)', 'Pausas/min', 'Dias ativos']}
+          rows={weeks.map((w) => [w.label, w.speakMin, w.mayaMin, w.spoken, w.retention === null ? '—' : `${w.retention}%`, w.selfRepair === null ? '—' : `${w.selfRepair}%`, w.secPerWord ?? '—', w.wpm ?? '—', w.latency ?? '—', w.pausesPerMin ?? '—', w.activeDays])}
         />
       </section>
 

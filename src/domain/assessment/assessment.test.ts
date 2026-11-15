@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { FORMS } from './forms';
-import { applyJudgement, compare, nextForm, reportText, scoreFree, scoreItem, speakingIndex, summarize } from './checkpoint';
+import { ALL_FORMS, applyJudgement, compare, nextForm, reportText, scoreFree, scoreItem, speakingIndex, summarize } from './checkpoint';
 import { allDrills } from '../../content';
 import { normalize } from '../practice/answer';
 import { autoTarget, checkpointSchedule, nextCheckpoint, phaseOf, weekOf, addDays, dayDiff } from '../plan/sixMonths';
@@ -9,7 +9,8 @@ import { addDay, weekly, planWeekTotals } from '../progress/daily';
 describe('Checkpoint: banco de itens', () => {
   it('3 formas paralelas: 12 itens, mesmas categorias na mesma ordem, 2 falas livres', () => {
     const cats = FORMS[0].items.map((i) => i.cat);
-    for (const f of FORMS) {
+    expect(ALL_FORMS).toHaveLength(6);
+    for (const f of ALL_FORMS) {
       expect(f.items).toHaveLength(12);
       expect(f.items.map((i) => i.cat)).toEqual(cats);
       expect(f.prompts).toHaveLength(2);
@@ -18,19 +19,20 @@ describe('Checkpoint: banco de itens', () => {
   it('nenhuma frase do checkpoint existe no curso (mede transferência, não decoreba)', () => {
     const trained = new Set(allDrills.flatMap((d) => [d.en, ...(d.alt ?? [])]).map(normalize));
     const trainedPt = new Set(allDrills.map((d) => d.pt.toLowerCase()));
-    for (const f of FORMS) for (const i of f.items) {
+    for (const f of ALL_FORMS) for (const i of f.items) {
       expect(trainedPt.has(i.pt.toLowerCase()), i.pt).toBe(false);
       for (const en of i.en) expect(trained.has(normalize(en)), en).toBe(false);
     }
   });
   it('formas têm tamanho parecido (diferença de palavras ≤ 15%)', () => {
-    const words = FORMS.map((f) => f.items.reduce((a, i) => a + i.en[0].split(' ').length, 0));
+    const words = ALL_FORMS.map((f) => f.items.reduce((a, i) => a + i.en[0].split(' ').length, 0));
     expect((Math.max(...words) - Math.min(...words)) / Math.max(...words)).toBeLessThanOrEqual(0.15);
   });
-  it('rodízio A → B → C → A', () => {
+  it('rodízio A → B → … → F → A', () => {
     expect(nextForm([]).id).toBe('A');
     expect(nextForm([{ form: 'A' }]).id).toBe('B');
-    expect(nextForm([{ form: 'A' }, { form: 'B' }, { form: 'C' }]).id).toBe('A');
+    expect(nextForm([{ form: 'A' }, { form: 'B' }, { form: 'C' }]).id).toBe('D');
+    expect(nextForm([{ form: 'F' }]).id).toBe('A');
   });
 });
 
