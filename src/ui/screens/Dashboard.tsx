@@ -42,7 +42,7 @@ export function Dashboard({ go }: { go: (r: Route) => void }) {
       ? { label: `Aula: ${next.title}`, sub: 'Vídeo, leitura e prática na escada', done: d.produced >= 12, go: { name: 'lesson', id: next.id } }
       : { label: 'Treino dos meus erros', sub: 'Frases das estruturas em que você mais erra', done: d.produced >= 12, go: { name: 'practice', lessonId: 'erros' } },
     { label: 'Fala livre de 1 minuto', sub: d.wpmN ? `${Math.round(d.wpmSum / d.wpmN)} palavras por minuto hoje` : 'Fale sem parar sobre a pergunta do dia', done: d.wpmN > 0, go: { name: 'monologue' } },
-    { label: `Treinador ao vivo (${mayaTarget} min)`, sub: `${Math.round(d.mayaSec / 60)} min hoje`, done: d.mayaSec >= mayaTarget * 60, go: { name: 'teacher' } },
+    { label: `Simulação do dia a dia (${mayaTarget} min)`, sub: `${Math.round(d.mayaSec / 60)} min de conversa hoje`, done: d.mayaSec >= mayaTarget * 60, go: { name: 'missions' } },
   ];
   const doneSteps = steps.filter((s) => s.done).length;
 
@@ -107,6 +107,12 @@ export function Dashboard({ go }: { go: (r: Route) => void }) {
           <ProdBar produced={produced} automatic={automatic} total={total} />
         </button>
 
+        <button className="tile" onClick={() => go({ name: 'missions' })}>
+          <span className="ex-kicker">Vida real</span>
+          <strong className="tile-title">Simulações do dia a dia</strong>
+          <span className="muted">{Object.keys(state.sim.results).length ? `${Object.keys(state.sim.results).length} de 10 feitas. ` : ''}Daily, reunião, gerente, cliente, restaurante: o personagem reage ao que você diz.</span>
+        </button>
+
         <button className="tile tile-teacher" onClick={() => go({ name: 'teacher' })}>
           <TeacherAvatar state="idle" size={84} />
           <span>
@@ -152,7 +158,7 @@ export function Dashboard({ go }: { go: (r: Route) => void }) {
 
         <button className="tile" onClick={() => go({ name: 'lab' })}>
           <span className="ex-kicker">Falar</span>
-          <strong className="tile-title">7 treinos de fala</strong>
+          <strong className="tile-title">8 treinos de fala</strong>
           <span className="muted">Fluência 60·45·30, reconto, eco com atraso, sotaque e mais.</span>
         </button>
 

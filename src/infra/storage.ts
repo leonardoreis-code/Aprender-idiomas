@@ -6,6 +6,7 @@ import type { CheckpointResult } from '../domain/assessment/checkpoint';
 import type { Daily } from '../domain/progress/daily';
 import type { Drill } from '../domain/curriculum/speaking';
 import type { RepairRecord } from '../domain/coach/mediation';
+import { DEFAULT_CONTEXT, type SimContext } from '../domain/sim/engine';
 
 export type LearnerLevel = 'zero' | 'fala' | 'avancado';
 export type Goal = 'trabalho' | 'entrevista' | 'viagem' | 'dia-a-dia';
@@ -72,6 +73,13 @@ export interface AppState {
   /** Treinador ao vivo: histórico de consertos (degrau de ajuda necessário). */
   repairs: RepairRecord[];
   coach: { liveMarks: boolean; echoBest: number };
+  /** Simulações do dia a dia. */
+  sim: {
+    context: SimContext;
+    today: { day: string; tags: string[] };
+    handsFree: boolean;
+    results: Record<string, { stars: number; plays: number; at: number }>;
+  };
 }
 
 const KEY = 'fluente:v1';
@@ -103,6 +111,7 @@ export const defaultState = (): AppState => ({
   custom: [],
   repairs: [],
   coach: { liveMarks: true, echoBest: 0 },
+  sim: { context: { ...DEFAULT_CONTEXT }, today: { day: '', tags: [] }, handsFree: false, results: {} },
 });
 
 export function loadState(): AppState {
@@ -119,6 +128,7 @@ export function loadState(): AppState {
       profile: { ...base.profile, ...parsed.profile },
       plan: { ...base.plan, ...parsed.plan },
       coach: { ...base.coach, ...parsed.coach },
+      sim: { ...base.sim, ...parsed.sim, context: { ...base.sim.context, ...parsed.sim?.context } },
       version: 1,
     };
   } catch {

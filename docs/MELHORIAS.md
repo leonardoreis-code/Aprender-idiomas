@@ -115,4 +115,26 @@ Critério de corte: entra primeiro o que **mede** a fala ou **aumenta minutos fa
 | 83 | Regras do detector calibradas com as suas transcrições reais (taxa de falso positivo) | 🗺️ P1 |
 | 84 | Descrever uma palavra sem dizê-la (circunlóquio), para quando o vocabulário faltar | 🗺️ P2 |
 
-**Totais:** 84 melhorias · ✅ 46 implementadas · 🗺️ 38 planejadas.
+## H. Simulações do dia a dia (interação e vida real)
+| # | Melhoria | Status |
+|---|---|---|
+| 85 | 10 simulações completas: daily com bloqueio, pedir ajuda, discordar, avisar atraso, entrevista, cliente, 1:1, bate-papo, restaurante, hotel | ✅ |
+| 86 | Objetivos comunicativos que acendem enquanto você fala (não só gramática) | ✅ |
+| 87 | Personagem que reage: insiste quando o ponto não veio, pede mais quando a resposta é curta | ✅ |
+| 88 | Pedir para repetir em inglês funciona e não pune (estratégia real de conversa) | ✅ |
+| 89 | "Travei": começo de frase após 3,5 s de silêncio ou no toque | ✅ |
+| 90 | "Como se diz…?": socorro de vocabulário no meio da conversa (glossário local + Claude no artefato) | ✅ |
+| 91 | Correção sem parar a conversa: pista embaixo da sua fala, com "ver correção" e "dizer de novo" | ✅ |
+| 92 | Ritmo ao vivo (palavras por minuto) enquanto fala | ✅ |
+| 93 | Seu contexto real (cargo, projeto, colega, ferramenta) dentro das falas do personagem | ✅ |
+| 94 | "O que tem no seu dia hoje?" prioriza as simulações do dia | ✅ |
+| 95 | Conversa contínua: o microfone abre sozinho depois do personagem (fora do artefato) | ✅ (não testado com voz) |
+| 96 | Estrelas por simulação e "modo real" com objetivos escondidos na repetição | ✅ |
+| 97 | Frases que resolvem a situação viram treino na escada com um toque | ✅ |
+| 98 | Personagem interpretado pelo Claude, reagindo livremente — artefato | ✅ (não testado ao vivo) |
+| 99 | Simulação gerada a partir da sua agenda real do dia | 🗺️ P1 |
+| 100 | Personagens com sotaques e velocidades diferentes | 🗺️ P1 |
+| 101 | Interrupções e ruído de chamada (áudio ruim, duas pessoas falando) | 🗺️ P2 |
+| 102 | Simulações em grupo (reunião com 3 personagens) | 🗺️ P2 |
+
+**Totais:** 102 melhorias · ✅ 60 implementadas · 🗺️ 42 planejadas.

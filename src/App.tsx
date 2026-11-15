@@ -31,6 +31,8 @@ import { Evolution } from './ui/screens/Evolution';
 import { Monologue, MySentences } from './ui/screens/Extras';
 import { LiveCoach } from './ui/screens/LiveCoach';
 import { DelayedEcho, Fluency, Lab, Retell } from './ui/screens/Methods';
+import { MissionPlayer, MissionsHub } from './ui/screens/Missions';
+import { findMission } from './content/missions';
 import { isArtifact } from './infra/platform';
 import { Logo } from './ui/icons/ui';
 import { NavIcon } from './ui/components/NavIcon';
@@ -89,7 +91,7 @@ function Shell() {
   const screen = <Screen route={route} go={go} />;
   if (immersive) return <>{screen}<Toasts /></>;
 
-  const active = (r: Route) => r.name === route.name || (r.name === 'course' && ['lesson', 'video', 'stories', 'story', 'base'].includes(route.name)) || (r.name === 'lab' && ['teacher', 'fluency', 'retell', 'echo', 'monologue', 'mine', 'accent'].includes(route.name)) || (r.name === 'profile' && route.name === 'settings');
+  const active = (r: Route) => r.name === route.name || (r.name === 'course' && ['lesson', 'video', 'stories', 'story', 'base'].includes(route.name)) || (r.name === 'lab' && ['teacher', 'fluency', 'retell', 'echo', 'monologue', 'mine', 'accent', 'missions', 'mission'].includes(route.name)) || (r.name === 'profile' && route.name === 'settings');
   return (
     <div className="app">
       <a href="#main" className="skip">Pular para o conteúdo</a>
@@ -176,6 +178,10 @@ function Screen({ route, go }: { route: Route; go: (r: Route) => void }) {
       return <Retell go={go} />;
     case 'echo':
       return <DelayedEcho go={go} />;
+    case 'missions':
+      return <MissionsHub go={go} />;
+    case 'mission':
+      return findMission(route.id) ? <MissionPlayer key={route.id} id={route.id} go={go} /> : <MissionsHub go={go} />;
     default:
       return <Dashboard go={go} />;
   }

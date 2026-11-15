@@ -173,3 +173,75 @@ Respond ONLY with JSON: {"errors":[{"quote":"","fix":"","clue_pt":"","rule_pt":"
     reply: r.reply.trim().slice(0, 300),
   };
 }
+
+export interface SimReply {
+  /** Fala do personagem, em inglês, reagindo ao que foi dito. */
+  reply: string;
+  /** Objetivos que o aluno cumpriu nesta fala. */
+  goalsMet: string[];
+  errors: CoachReply['errors'];
+  /** A conversa chegou a um fim natural. */
+  done: boolean;
+}
+
+/** Um turno de simulação com o Claude fazendo o personagem. */
+export async function simTurn(input: {
+  setting: string;
+  character: string;
+  goals: { id: string; label: string; done: boolean }[];
+  history: { role: 'character' | 'student'; text: string }[];
+  utterance: string;
+  alreadyFound: string[];
+  turns: number;
+  context: string;
+}): Promise<SimReply | null> {
+  const r = await askJson<{ reply?: unknown; goals_met?: unknown; errors?: unknown; done?: unknown }>(
+    `You are playing a character in a realistic role-play to train a Brazilian professional to speak English in real-life situations.
+Situation (in Portuguese, known to the learner): ${input.setting}
+You are: ${input.character}. Learner's real context: ${input.context}.
+Learner's communicative goals (id: description, status):
+${input.goals.map((g) => `- ${g.id}: ${g.label} [${g.done ? 'already done' : 'NOT done yet'}]`).join('\n')}
+Conversation so far:
+${input.history.slice(-10).map((h) => `${h.role === 'character' ? 'You' : 'Learner'}: ${h.text}`).join('\n')}
+Learner just said (speech recognition, ignore punctuation): "${input.utterance}"
+Learner turns so far: ${input.turns}.
+
+Stay fully in character, like a real person in this situation: react to what they actually said, interrupt politely or ask a follow-up when something is vague, and steer the conversation so the learner gets a natural chance to do a goal that is NOT done yet. Never teach, never mention goals, never correct. Keep it to 1-2 short spoken sentences. If the learner asks you to repeat or slow down, do it. When every goal is done (or after 9 learner turns), close the conversation naturally and set done true.
+Also judge: "goals_met" = ids of goals the learner accomplished IN THIS utterance (meaning counts, even with grammar errors). "errors" = up to 2 real grammar/word-choice errors in the utterance, excluding these already flagged: ${input.alreadyFound.length ? input.alreadyFound.map((x) => `"${x}"`).join(', ') : '(none)'}; "quote" exact excerpt, "clue_pt" hint in Portuguese without the answer, "rule_pt" short rule in Portuguese, "cat" one of: ${CATS.join(', ')}.
+Respond ONLY with JSON: {"reply":"","goals_met":[""],"errors":[{"quote":"","fix":"","clue_pt":"","rule_pt":"","cat":""}],"done":false}`,
+    'quick',
+  );
+  if (!r || typeof r.reply !== 'string' || !r.reply.trim()) return null;
+  const ids = new Set(input.goals.map((g) => g.id));
+  const low = input.utterance.toLowerCase();
+  const errors = (Array.isArray(r.errors) ? r.errors : [])
+    .map((e) => e as { quote?: unknown; fix?: unknown; clue_pt?: unknown; rule_pt?: unknown; cat?: unknown })
+    .filter((e) => typeof e.quote === 'string' && typeof e.fix === 'string' && e.quote.trim() && e.fix.trim() && e.quote.toLowerCase() !== (e.fix as string).toLowerCase() && low.includes((e.quote as string).toLowerCase().replace(/[.,!?]/g, '').trim()))
+    .slice(0, 2)
+    .map((e) => ({
+      quote: (e.quote as string).slice(0, 160),
+      fix: (e.fix as string).slice(0, 160),
+      clue: typeof e.clue_pt === 'string' ? e.clue_pt.slice(0, 200) : 'Tem um ajuste neste trecho.',
+      explain: typeof e.rule_pt === 'string' ? e.rule_pt.slice(0, 240) : '',
+      cat: typeof e.cat === 'string' && CATS.includes(e.cat) ? e.cat : 'vocabulary',
+    }));
+  return {
+    reply: r.reply.trim().slice(0, 320),
+    goalsMet: Array.isArray(r.goals_met) ? r.goals_met.filter((x): x is string => typeof x === 'string' && ids.has(x)) : [],
+    errors,
+    done: r.done === true,
+  };
+}
+
+/** "Como se diz?": tradução curta de uma palavra ou expressão, no contexto da conversa. */
+export async function howToSay(pt: string, situation: string): Promise<string | null> {
+  const s = caps.sample;
+  if (!s) return null;
+  try {
+    const r = await s(`A Brazilian learner is in this situation: ${situation}. They got stuck and need the natural spoken English for this Portuguese word or phrase: "${pt}". Answer with ONLY the English (max 8 words, most natural option; if two are common, separate with " / ").`, { modelTier: 'quick' });
+    const t = r.text.trim().replace(/^["']|["'.]$/g, '');
+    return t && t.length < 90 ? t : null;
+  } catch {
+    return null;
+  }
+}

@@ -575,3 +575,41 @@ button.tile:disabled { opacity: .55; transform: none; }
 .echo-big { font-family: var(--font-display); font-size: 3.4rem; font-weight: 800; margin: 6px 0; line-height: 1; }
 .echo-big.ok { color: var(--ok); }
 .echo-big.bad { color: var(--bad); }
+
+/* =====================================================================
+ * v5 — simulações do dia a dia
+ * ===================================================================== */
+.mission-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(280px, 100%), 1fr)); gap: 12px; margin-top: 14px; }
+.mission-tile.today { border-color: var(--sticky); border-width: 2px; }
+.stars { display: inline-flex; gap: 2px; }
+.ctx-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; margin-top: 10px; }
+.ctx-grid label { display: grid; gap: 4px; font-size: .9rem; color: var(--ink-2); }
+.ctx-grid .text-input { min-height: 44px; font-size: 1rem; }
+.mission .card { margin-top: 12px; }
+.goal-hud { list-style: none; padding: 0; margin: 8px 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; position: sticky; top: 0; z-index: 4; background: var(--paper); padding-block: 6px; }
+.goal-hud li { display: flex; gap: 6px; align-items: center; font-size: .82rem; line-height: 1.25; padding: 5px 8px; border-radius: 10px; background: var(--surface); border: 1px solid var(--line); color: var(--ink-2); transition: background .3s, border-color .3s; }
+.goal-hud li.ok { background: var(--ok-bg); border-color: var(--ok); color: var(--ink); font-weight: 700; }
+.goal-dot { flex: none; width: 18px; height: 18px; border-radius: 50%; border: 2px solid var(--ink-3); display: grid; place-items: center; }
+.goal-hud li.ok .goal-dot { background: var(--ok); border-color: var(--ok); color: #fff; }
+.goal-hud.hidden-goals li:not(.ok) { font-style: italic; }
+.sim-chat { margin-top: 4px; }
+.bubble.user-sim { background: var(--surface); border: 2px solid var(--indigo); color: var(--ink); justify-self: end; border-bottom-right-radius: 4px; max-width: 86%; }
+.bubble.user-sim p { font-size: 1.08rem; }
+.live-bubble { border-style: dashed; }
+.feed { display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: center; margin-top: 6px; padding: 6px 8px; border-radius: 8px; background: color-mix(in srgb, var(--bad) 9%, var(--surface)); font-size: .92rem; }
+.feed.fixed { background: var(--ok-bg); }
+.feed svg { vertical-align: -2px; }
+.feed-actions { display: inline-flex; gap: 10px; margin-left: auto; }
+.link-btn.mini { min-height: 28px; padding: 0 2px; font-size: .85rem; }
+.starter { margin: 0; }
+.sim-controls { position: sticky; bottom: 76px; display: grid; gap: 8px; justify-items: center; padding: 10px 0 6px; background: var(--paper); border-top: 1px solid var(--line); }
+.sim-controls form { width: 100%; }
+.sim-controls .mic { width: 84px; height: 84px; margin: 0; }
+.ask-box { display: grid; grid-template-columns: 1fr auto; gap: 8px; width: 100%; }
+.ask-box p { grid-column: 1 / -1; margin: 0; }
+.ask-box .text-input { min-height: 44px; font-size: 1rem; }
+@media (min-width: 900px) { .sim-controls { bottom: 0; } }
+
+.sim-end { scroll-margin-bottom: 300px; height: 1px; }
+.sim-chat { padding-bottom: 12px; }
+@media (min-width: 700px) { .goal-hud { grid-template-columns: repeat(4, minmax(0, 1fr)); } }

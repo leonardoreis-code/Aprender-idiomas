@@ -19,6 +19,7 @@ import { FREE_PROMPTS } from './Extras';
 export function Lab({ go }: { go: (r: Route) => void }) {
   const { state } = useStore();
   const items: { title: string; what: string; why: string; route: Route; tag: string }[] = [
+    { tag: 'Vida real', title: 'Simulações do dia a dia', what: 'Daily, reunião, gerente, cliente, entrevista, restaurante, hotel: conversas completas em que o personagem reage ao que você diz.', why: 'O sucesso é medido pelo que você consegue fazer na conversa, não só pela gramática.', route: { name: 'missions' } },
     { tag: 'Tempo real', title: 'Treinador ao vivo', what: 'Fale e veja o erro ser marcado enquanto fala. Conserte a própria frase com ajuda em degraus.', why: 'Autocorreção guiada: quem conserta o próprio erro retém mais do que quem só ouve a resposta.', route: { name: 'teacher' } },
     { tag: 'Fluência', title: 'Fluência 60 · 45 · 30', what: 'Conte a mesma coisa três vezes, com cada vez menos tempo.', why: 'Técnica 4/3/2: repetir o mesmo conteúdo sob pressão de tempo automatiza a fala.', route: { name: 'fluency' } },
     { tag: 'Entendo → falo', title: 'Reconto', what: 'Ouça uma história curta e reconte com as suas palavras.', why: 'Usa o que você já tem (compreensão) como rampa para o que falta (produção).', route: { name: 'retell' } },
@@ -30,7 +31,7 @@ export function Lab({ go }: { go: (r: Route) => void }) {
   return (
     <main className="shell" id="main">
       <h1 className="page-title">Falar</h1>
-      <p className="muted">Sete formas de treinar a fala, cada uma atacando uma parte diferente do problema. {state.coach.echoBest > 0 && <>Seu recorde no eco: <b>{state.coach.echoBest} palavras</b>.</>}</p>
+      <p className="muted">Oito formas de treinar a fala, cada uma atacando uma parte diferente do problema. {state.coach.echoBest > 0 && <>Seu recorde no eco: <b>{state.coach.echoBest} palavras</b>.</>}</p>
       <div className="lab-grid">
         {items.map((it, i) => (
           <button key={it.title} className={`tile ${i === 0 ? 'tile-main' : ''}`} onClick={() => go(it.route)}>
